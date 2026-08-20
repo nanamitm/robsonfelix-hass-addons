@@ -9,6 +9,7 @@ Custom add-ons for Home Assistant.
 | Add-on | Description |
 |--------|-------------|
 | [Claude Code](claudecode/) | AI assistant for automations, debugging, and smart home management |
+| [Codex](codex/) | OpenAI Codex CLI in the sidebar, same job, amd64/aarch64 only |
 | [Auto-Monocle](auto-monocle/) | Auto-discover HA cameras and expose to Alexa via Monocle Gateway |
 | [Playwright Browser](playwright-browser/) | Headless Chromium with CDP endpoint for browser automation |
 

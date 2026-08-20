@@ -1,0 +1,77 @@
+configuration:
+  enable_mcp:
+    name: Enable Home Assistant MCP
+    description: >-
+      Enable the Home Assistant MCP server for direct entity and service
+      interaction from Codex. Allows Codex to query states, call services,
+      and interact with your smart home.
+  enable_playwright_mcp:
+    name: Enable Playwright MCP
+    description: >-
+      Enable the Playwright MCP server for browser automation. Requires the
+      "Playwright Browser" add-on to be installed and running. Allows Codex to
+      navigate web pages, fill forms, click elements, and take screenshots.
+  playwright_cdp_host:
+    name: Playwright CDP Host
+    description: >-
+      Hostname of the Playwright Browser add-on for CDP connection. Leave empty
+      for default (playwright-browser). If connection fails, check the Playwright
+      Browser container hostname (e.g., 1016f397-playwright-browser).
+  model:
+    name: Model
+    description: >-
+      Model Codex should use, for example gpt-5.6-codex. Leave empty to use
+      whatever the Codex CLI picks by default for your account.
+  approval_policy:
+    name: Approval Policy
+    description: >-
+      When Codex asks before running a command. "on-request" lets Codex ask when
+      it wants to escalate, "untrusted" asks for anything not on its trusted
+      list, and "never" runs everything without asking. Keep this at on-request
+      or untrusted - this add-on runs as root with full access to your Home
+      Assistant configuration.
+  sandbox_mode:
+    name: Sandbox Mode
+    description: >-
+      How much of the filesystem Codex may touch. "read-only" and
+      "workspace-write" rely on bubblewrap, which needs to create a user
+      namespace - something this add-on container is normally not allowed to do,
+      and Codex then fails as soon as it runs a command. The startup log warns
+      when that is the case. "danger-full-access" turns the sandbox off and
+      relies on the add-on container itself as the boundary, which is the same
+      boundary every other add-on runs behind.
+  model_reasoning_effort:
+    name: Reasoning Effort
+    description: >-
+      How much reasoning the model does before answering. "default" leaves the
+      choice to Codex. Higher settings are slower and use more tokens, and not
+      every model supports every level.
+  terminal_font_size:
+    name: Terminal Font Size
+    description: >-
+      Font size for the web terminal in pixels (10-24).
+      Adjust for readability on your display.
+  terminal_theme:
+    name: Terminal Theme
+    description: >-
+      Color theme for the web terminal.
+      Choose 'dark' for dark backgrounds or 'light' for light backgrounds.
+  working_directory:
+    name: Working Directory
+    description: >-
+      The default working directory when Codex starts. Use /homeassistant for
+      direct access to HA configuration files. This directory is also marked as
+      trusted, so Codex does not ask about it on every start.
+  session_persistence:
+    name: Session Persistence
+    description: >-
+      Enable tmux session persistence. When enabled, your terminal session
+      survives browser refreshes and disconnects. Recommended for long-running tasks.
+  auto_update_codex:
+    name: Auto-update Codex
+    description: >-
+      Check for and install the newest Codex CLI release on add-on startup.
+      Keeps Codex current without requiring add-on version bumps.
+
+network:
+  7681/tcp: Web Terminal (ttyd)

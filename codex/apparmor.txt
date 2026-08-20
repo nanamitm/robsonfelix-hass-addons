@@ -1,0 +1,85 @@
+#include <tunables/global>
+
+profile codex flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities needed for terminal and networking
+  capability net_admin,
+  capability net_raw,
+  capability setgid,
+  capability setuid,
+  capability chown,
+  capability fowner,
+  capability dac_override,
+  capability dac_read_search,
+  capability sys_tty_config,
+
+  # Network access for the OpenAI API and hass-mcp
+  network,
+
+  # PTY/TTY access for terminal
+  /dev/ptmx rw,
+  /dev/pts/* rw,
+  /dev/tty* rw,
+  /dev/null rw,
+  /dev/zero r,
+  /dev/urandom r,
+
+  # System files (read-only)
+  /etc/** r,
+  /usr/** r,
+  /lib/** r,
+  /proc/** r,
+  /sys/** r,
+
+  # Generated system config layer and the installed-version marker, both
+  # rewritten on every start.
+  /etc/codex/ rw,
+  /etc/codex/** rw,
+
+  # Execute permissions for binaries
+  /bin/** ixr,
+  /usr/bin/** ixr,
+  /usr/lib/** ixmr,
+  /usr/local/** ixr,
+  # The Codex binary and its bubblewrap helper live here, and install-codex.sh
+  # replaces them in place when auto_update_codex is on; without w that fails
+  # with EACCES on rename even as root. npm's global prefix needs the same.
+  /usr/local/bin/** rwixk,
+  /usr/local/lib/node_modules/** rwixk,
+  /usr/libexec/** ixr,
+
+  # Add-on data
+  /data/** rwk,
+
+  # Home Assistant config - main working directory
+  /homeassistant/ r,
+  /homeassistant/** rwk,
+
+  # CODEX_HOME. Codex materialises helper binaries under $CODEX_HOME/tmp and
+  # sources shell snapshots from it, so this subtree needs exec on top of write.
+  /homeassistant/.codex/ rw,
+  /homeassistant/.codex/** rwixk,
+
+  # Other mapped HA directories
+  /ssl/ r,
+  /ssl/** r,
+  /share/ r,
+  /share/** rwk,
+  /media/ r,
+  /media/** rwk,
+  /backup/ r,
+  /backup/** r,
+  /addon_configs/ r,
+  /addon_configs/** rwk,
+  /config/ r,
+  /config/** rwk,
+
+  # User home
+  /root/ r,
+  /root/** rwk,
+  /tmp/** rwk,
+
+  # Node.js modules
+  /usr/lib/node_modules/** ixmr,
+}
