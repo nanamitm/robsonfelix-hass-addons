@@ -1,0 +1,5 @@
+# sha256 of every AGENTS.md this add-on has shipped before the current one.
+# A file matching any of these is still the add-on's copy, not the user's, so
+# it can be refreshed. Append the outgoing hash whenever AGENTS.md changes -
+# without it, everyone upgrading is told their untouched file was edited.
+7fe4f6729305cb998564c1b85b4af4390827243540ec8d0721436a421febf33f  0.1.0-0.1.2

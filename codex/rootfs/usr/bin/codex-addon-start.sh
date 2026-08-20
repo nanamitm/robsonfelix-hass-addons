@@ -60,10 +60,21 @@ echo "[INFO] Codex $(timeout 30 codex --version 2>/dev/null || echo '(not respon
 # only while the file is still the copy this add-on wrote. $CODEX_HOME/AGENTS.md
 # is also where Codex's own docs tell users to put global instructions, and
 # overwriting those would destroy work the user cannot get back.
+#
+# Ownership is decided by content hash: the marker records what was last
+# installed, and AGENTS.md.superseded lists what earlier add-on versions
+# shipped. Without that list, upgrading from a version that predates the marker
+# reports every untouched file as edited and freezes it for good.
 SHIPPED_AGENTS=/usr/share/codex-addon/AGENTS.md
 AGENTS_MARKER="$CODEX_HOME/.agents-md-installed.sha256"
-if [ ! -f "$CODEX_HOME/AGENTS.md" ] \
-    || [ "$(sha256sum < "$CODEX_HOME/AGENTS.md" | cut -d' ' -f1)" = "$(cat "$AGENTS_MARKER" 2>/dev/null || true)" ]; then
+agents_is_ours() {
+    [ -f "$CODEX_HOME/AGENTS.md" ] || return 1
+    local current
+    current=$(sha256sum < "$CODEX_HOME/AGENTS.md" | cut -d' ' -f1)
+    [ "$current" != "$(cat "$AGENTS_MARKER" 2>/dev/null || true)" ] || return 0
+    grep -q "^$current[[:space:]]" "$SHIPPED_AGENTS.superseded" 2>/dev/null
+}
+if [ ! -f "$CODEX_HOME/AGENTS.md" ] || agents_is_ours; then
     install -m 0644 "$SHIPPED_AGENTS" "$CODEX_HOME/AGENTS.md"
     sha256sum < "$SHIPPED_AGENTS" | cut -d' ' -f1 > "$AGENTS_MARKER"
 else

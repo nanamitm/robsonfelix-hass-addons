@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-08-20
+
+### Fixed
+- Upgrading to 0.1.3 reported every untouched `$CODEX_HOME/AGENTS.md` as edited,
+  and then never refreshed it again. Ownership is decided by comparing the file
+  against a marker that 0.1.3 introduced, so a file installed by any earlier
+  version matched nothing. The add-on now also compares against
+  `AGENTS.md.superseded`, a list of the hashes it has shipped before
+
 ## [0.1.3] - 2026-08-20
 
 Fixes from a code review of the add-on. Three of them share a failure mode: a

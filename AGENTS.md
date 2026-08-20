@@ -30,7 +30,11 @@ bump never reaches an installed add-on. Follow the existing format:
   - `rootfs/usr/bin/codex-addon-start.sh` - Entrypoint: renders the add-on
     options into `/etc/codex/config.toml`, then execs ttyd
   - `rootfs/usr/share/codex-addon/AGENTS.md` - Global instructions installed
-    into `$CODEX_HOME` on every start
+    into `$CODEX_HOME`. **When you change this file, append the outgoing
+    content's sha256 to `AGENTS.md.superseded`**; the entrypoint uses that list
+    to tell its own copy from one the user edited, and without it everyone
+    upgrading is told their untouched file was edited and it is never refreshed
+    again
   - `CHANGELOG.md` - Version history (**update before commits**)
   - `apparmor.txt` - Security profile; the profile name must match the slug
 
