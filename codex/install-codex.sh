@@ -33,18 +33,31 @@ if [ -z "$version" ] || [ "$version" = "null" ]; then
     exit 1
 fi
 
+CODEX_BIN="$BIN_DIR/codex"
+CODE_MODE_BIN="$BIN_DIR/codex-code-mode-host"
+BWRAP_BIN="$BIN_DIR/codex-resources/bwrap"
+
+# All three have to be present, not just the CLI: the helpers install
+# non-fatally, so a transient failure to fetch one would otherwise be frozen in
+# place until upstream cuts a new release.
 installed=$(cat "$VERSION_FILE" 2>/dev/null || true)
-if [ "$version" = "$installed" ] && [ -x "$BIN_DIR/codex" ]; then
+if [ "$version" = "$installed" ] \
+    && [ -x "$CODEX_BIN" ] \
+    && [ -x "$CODE_MODE_BIN" ] \
+    && [ -x "$BWRAP_BIN" ]; then
     echo "[install-codex] codex $version already installed"
     exit 0
 fi
 
 tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
 
+# Downloads one asset and leaves it at "$dest.new", ready to be moved into
+# place. Nothing that already works is touched until every artifact has been
+# fetched and the new CLI has proved it runs here.
+#
 # Each of these tarballs holds exactly one file, named after the asset without
 # the .tar.gz suffix.
-install_asset() {
+stage_asset() {
     asset="$1"
     dest="$2"
 
@@ -66,34 +79,58 @@ install_asset() {
 
     tar xzf "$tmp/$asset" -C "$tmp"
     mkdir -p "$(dirname "$dest")"
-    # Replace in place: an update runs while the old binary may still be open.
     mv "$tmp/${asset%.tar.gz}" "$dest.new"
     chmod +x "$dest.new"
-    mv "$dest.new" "$dest"
 }
 
-install_asset "codex-$TARGET.tar.gz" "$BIN_DIR/codex"
+# Drop anything staged but not committed, so a failed run never leaves a
+# half-installed .new file behind for the next one to pick up.
+trap 'rm -rf "$tmp" "$CODEX_BIN.new" "$CODE_MODE_BIN.new" "$BWRAP_BIN.new"' EXIT
+
+stage_asset "codex-$TARGET.tar.gz" "$CODEX_BIN"
+
+# Prove the new CLI runs before replacing the working one. This is what turns a
+# broken upstream release into a warning and an unchanged install, rather than
+# an add-on with no usable codex until the image is rebuilt - the failure mode
+# the Claude Code add-on this derives from had to recover from.
+if ! "$CODEX_BIN.new" --version > /dev/null 2>&1; then
+    echo "[install-codex] codex $version does not run here; keeping the installed version" >&2
+    exit 1
+fi
 
 # Codex looks for bubblewrap next to its own executable before falling back to
 # PATH, and panics without it as soon as a sandboxed command runs. Only the
 # read-only and workspace-write sandbox modes need it, so a failure here is not
 # fatal.
-if ! install_asset "bwrap-$TARGET.tar.gz" "$BIN_DIR/codex-resources/bwrap"; then
+bwrap_ok=true
+if ! stage_asset "bwrap-$TARGET.tar.gz" "$BWRAP_BIN"; then
+    bwrap_ok=false
     echo "[install-codex] bubblewrap unavailable; only sandbox_mode=danger-full-access will work" >&2
 fi
 
 # Code mode runs tool calls as code in a separate host process, which Codex
 # looks for next to its own executable. Without it Codex warns on every start
 # and fails code mode closed, so ship it too.
-if ! install_asset "codex-code-mode-host-$TARGET.tar.gz" "$BIN_DIR/codex-code-mode-host"; then
+code_mode_ok=true
+if ! stage_asset "codex-code-mode-host-$TARGET.tar.gz" "$CODE_MODE_BIN"; then
+    code_mode_ok=false
     echo "[install-codex] code-mode host unavailable; code mode will stay disabled" >&2
 fi
 
-"$BIN_DIR/codex" --version > /dev/null 2>&1 || {
-    echo "[install-codex] the installed binary does not run" >&2
-    exit 1
-}
+# Commit. The CLI goes last so that a crash midway leaves the old CLI paired
+# with the old helpers rather than the other way round.
+if [ "$bwrap_ok" = true ]; then
+    mv "$BWRAP_BIN.new" "$BWRAP_BIN"
+fi
+if [ "$code_mode_ok" = true ]; then
+    mv "$CODE_MODE_BIN.new" "$CODE_MODE_BIN"
+fi
+mv "$CODEX_BIN.new" "$CODEX_BIN"
 
-mkdir -p "$(dirname "$VERSION_FILE")"
-printf '%s\n' "$version" > "$VERSION_FILE"
+# Only claim this version once every artifact is in place, so a partial install
+# is retried on the next start instead of being skipped by the guard above.
+if [ "$bwrap_ok" = true ] && [ "$code_mode_ok" = true ]; then
+    mkdir -p "$(dirname "$VERSION_FILE")"
+    printf '%s\n' "$version" > "$VERSION_FILE"
+fi
 echo "[install-codex] codex $version installed"

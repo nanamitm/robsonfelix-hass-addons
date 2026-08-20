@@ -64,7 +64,7 @@ of your Home Assistant backups.
 |-------|---------------|
 | `/etc/codex/config.toml` | Generated from the add-on options on every start. Lowest-precedence layer, inside the container, never in a backup |
 | `/homeassistant/.codex/config.toml` | Yours. Overrides everything above, and the add-on never writes it |
-| `/homeassistant/.codex/AGENTS.md` | Add-on instructions about HA paths and logs, rewritten on every start |
+| `/homeassistant/.codex/AGENTS.md` | Add-on instructions about HA paths and logs, refreshed on start while you have not edited it |
 | `/homeassistant/.codex/AGENTS.override.md` | Your standing instructions. Codex prefers this over `AGENTS.md` |
 
 So changing an add-on option always takes effect, and anything you set by hand
@@ -111,8 +111,10 @@ ha core restart
 ## Updating Codex
 
 With `auto_update_codex` enabled the add-on installs the newest Codex release on
-every start, verifying the published SHA-256 before replacing the binary. Turn
-it off to stay on whatever the image was built with.
+every start. It checks the published SHA-256 and then runs the new binary once,
+and only replaces the working install if both pass - a release that cannot run
+on your machine leaves the current one untouched and logs a warning. Turn the
+option off to stay on whatever the image was built with.
 
 ## Credits
 

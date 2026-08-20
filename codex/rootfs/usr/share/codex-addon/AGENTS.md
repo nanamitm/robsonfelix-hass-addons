@@ -67,9 +67,11 @@ ha core restart
 
 ## Add-on Notes
 
-- This file is rewritten by the add-on on every start. Put your own standing
-  instructions in `/homeassistant/.codex/AGENTS.override.md`, which Codex loads
-  instead of this file when present.
+- The add-on refreshes this file on start, but only while it is still the copy
+  the add-on installed - your edits are kept, and reported in the startup log.
+  Prefer `/homeassistant/.codex/AGENTS.override.md` for your own standing
+  instructions: Codex loads it instead of this file when present, so it never
+  competes with add-on updates.
 - Add-on settings (model, approval policy, sandbox mode, MCP servers) come from
   `/etc/codex/config.toml`, regenerated on every start from the add-on options.
   Your own `/homeassistant/.codex/config.toml` overrides it.

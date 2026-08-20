@@ -22,6 +22,11 @@ export HA_URL="http://supervisor/core"
 
 opt() { jq -r "$1" "$OPTIONS"; }
 
+# Options typed as `str` in config.yaml can contain anything, including the two
+# characters that would end a TOML basic string early and corrupt the whole
+# generated file.
+toml_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+
 ENABLE_MCP=$(opt 'if .enable_mcp == null then true else .enable_mcp end')
 ENABLE_PLAYWRIGHT=$(opt '.enable_playwright_mcp // false')
 PLAYWRIGHT_HOST=$(opt '.playwright_cdp_host // ""')
@@ -35,16 +40,36 @@ WORKDIR=$(opt '.working_directory // "/homeassistant"')
 SESSION_PERSIST=$(opt 'if .session_persistence == null then true else .session_persistence end')
 AUTO_UPDATE=$(opt '.auto_update_codex // false')
 
+# A working_directory that does not exist would otherwise take the entrypoint
+# down before ttyd starts, leaving no terminal to correct the option from.
+if [ ! -d "$WORKDIR" ]; then
+    echo "[WARN] working_directory $WORKDIR does not exist; falling back to /homeassistant"
+    WORKDIR=/homeassistant
+fi
+
 mkdir -p "$CODEX_HOME" "$SYSTEM_CONFIG_DIR"
 
 if [ "$AUTO_UPDATE" = "true" ]; then
-    /usr/local/bin/install-codex.sh "$(uname -m)" || echo '[WARN] Update failed; keeping the installed version'
+    # install-codex.sh only replaces the CLI once the new one has proved it
+    # runs, so this really does leave a working install behind.
+    /usr/local/bin/install-codex.sh "$(uname -m)" || echo '[WARN] Update failed; the previous version is untouched'
 fi
-echo "[INFO] Codex $(codex --version 2>/dev/null || echo '(not responding)')"
+echo "[INFO] Codex $(timeout 30 codex --version 2>/dev/null || echo '(not responding)')"
 
-# Global instructions. Rewritten on every start so add-on updates ship new
-# guidance; Codex prefers AGENTS.override.md, so that is where user edits go.
-install -m 0644 /usr/share/codex-addon/AGENTS.md "$CODEX_HOME/AGENTS.md"
+# Global instructions, refreshed so that add-on updates ship new guidance - but
+# only while the file is still the copy this add-on wrote. $CODEX_HOME/AGENTS.md
+# is also where Codex's own docs tell users to put global instructions, and
+# overwriting those would destroy work the user cannot get back.
+SHIPPED_AGENTS=/usr/share/codex-addon/AGENTS.md
+AGENTS_MARKER="$CODEX_HOME/.agents-md-installed.sha256"
+if [ ! -f "$CODEX_HOME/AGENTS.md" ] \
+    || [ "$(sha256sum < "$CODEX_HOME/AGENTS.md" | cut -d' ' -f1)" = "$(cat "$AGENTS_MARKER" 2>/dev/null || true)" ]; then
+    install -m 0644 "$SHIPPED_AGENTS" "$CODEX_HOME/AGENTS.md"
+    sha256sum < "$SHIPPED_AGENTS" | cut -d' ' -f1 > "$AGENTS_MARKER"
+else
+    echo "[INFO] $CODEX_HOME/AGENTS.md has been edited; leaving it as it is"
+    echo '[INFO] Delete it to get the add-on version back, or keep your own notes in AGENTS.override.md'
+fi
 
 if [ -z "$PLAYWRIGHT_HOST" ] && [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
     echo '[INFO] Auto-detecting Playwright Browser hostname...'
@@ -65,7 +90,7 @@ fi
     echo "# $CODEX_HOME/config.toml overrides it."
     echo
     if [ -n "$MODEL" ] && [ "$MODEL" != "null" ]; then
-        printf 'model = "%s"\n' "$MODEL"
+        printf 'model = "%s"\n' "$(toml_escape "$MODEL")"
     fi
     printf 'approval_policy = "%s"\n' "$APPROVAL"
     printf 'sandbox_mode = "%s"\n' "$SANDBOX"
@@ -75,7 +100,7 @@ fi
     echo
     # Skip the "do you trust this folder?" prompt: the add-on already runs as
     # root with the HA config directory mounted read-write.
-    printf '[projects."%s"]\ntrust_level = "trusted"\n' "$WORKDIR"
+    printf '[projects."%s"]\ntrust_level = "trusted"\n' "$(toml_escape "$WORKDIR")"
     if [ "$ENABLE_MCP" = "true" ]; then
         # Codex hands an MCP server a fixed allowlist of variables - HOME, PATH,
         # SHELL, USER, LANG and a few more - and nothing else, so hass-mcp never
@@ -87,7 +112,7 @@ fi
     fi
     if [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
         printf '\n[mcp_servers.playwright]\ncommand = "npx"\n'
-        printf 'args = ["--no-install", "@playwright/mcp", "--cdp-endpoint", "http://%s:9222"]\n' "$PLAYWRIGHT_HOST"
+        printf 'args = ["--no-install", "@playwright/mcp", "--cdp-endpoint", "http://%s:9222"]\n' "$(toml_escape "$PLAYWRIGHT_HOST")"
     fi
 } > "$SYSTEM_CONFIG"
 
@@ -97,7 +122,7 @@ if [ "$ENABLE_MCP" = "true" ]; then
     # Assistant. There is no safe automatic fallback: `codex mcp add` writes to
     # the user config and cannot set env_vars, so the only way to give hass-mcp
     # its token from there would be to persist the token itself.
-    if codex mcp list 2>/dev/null | grep -q '^homeassistant[[:space:]]'; then
+    if timeout 30 codex mcp list 2>/dev/null | grep -q '^homeassistant[[:space:]]'; then
         echo '[INFO] Home Assistant MCP server configured'
     else
         echo '[ERROR] Codex did not pick up /etc/codex/config.toml, so the Home Assistant'
@@ -133,7 +158,7 @@ else
     SHELL_CMD=(bash --login)
 fi
 
-cd "$WORKDIR"
+cd "$WORKDIR" || cd /homeassistant
 exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
     -t "fontSize=$FONT_SIZE" \
     -t fontFamily=Monaco,Consolas,monospace \

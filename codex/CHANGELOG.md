@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-08-20
+
+Fixes from a code review of the add-on. Three of them share a failure mode: a
+step in the entrypoint dies before `exec ttyd`, so the add-on has no web
+terminal and no way to fix the cause from inside.
+
+### Fixed
+- An update that could not run replaced the working CLI anyway. `install-codex.sh`
+  moved the new binary into place and only then smoke-tested it, with no
+  rollback, so a broken upstream release left the add-on without a usable
+  `codex` until the image was rebuilt - and, because the version file was never
+  written, re-downloaded the same broken release on every start. All artifacts
+  are now staged next to their targets, the new CLI has to answer `--version`
+  before anything is replaced, and a failure leaves the previous install exactly
+  as it was. The startup log line no longer claims to have kept a version it had
+  already overwritten
+- A `working_directory` that does not exist killed the entrypoint at `cd`, under
+  `set -e`, before ttyd started. It now falls back to `/homeassistant` with a
+  warning, early enough that the trusted-project entry uses the same corrected
+  path
+- `codex --version` and `codex mcp list` ran without a timeout, so a hung CLI
+  stalled startup before ttyd, the failure the Claude Code add-on wrapped every
+  CLI call in `timeout 30` to avoid. Both are wrapped now, matching the sandbox
+  probe
+- `$CODEX_HOME/AGENTS.md` was overwritten on every start. That path is where
+  Codex's own docs tell users to put global instructions, so anyone following
+  them lost the file on the next restart. The add-on now refreshes it only while
+  it still matches the copy it installed, and otherwise says so and leaves it
+  alone
+- A transient failure to fetch bubblewrap or the code-mode host was frozen in
+  place: the version file was written anyway, and the early-exit guard only
+  checked the CLI, so no later start retried. The guard now requires all three
+  binaries, and the version is recorded only when all three are installed
+- Option values were interpolated into the generated TOML unescaped. A `"` or
+  `\` in `working_directory`, `model` or `playwright_cdp_host` corrupted the
+  whole config file, which Codex then could not read
+
 ## [0.1.2] - 2026-08-20
 
 ### Fixed
