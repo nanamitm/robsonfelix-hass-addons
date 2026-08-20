@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-08-20
+
+### Fixed
+- Codex warned `Code Mode is unavailable because failed to spawn code-mode host
+  /usr/local/bin/codex-code-mode-host` on every start. `install-codex.sh` pulled
+  only the `codex` binary and bubblewrap, but Codex also expects the code-mode
+  host next to its own executable - the npm package and the upstream installer
+  both vendor it. It is now installed the same way, and treated as non-fatal so
+  a missing asset does not break the build
+
 ## [0.1.0] - 2026-08-20
 
 Initial release: a Codex CLI port of the Claude Code add-on.

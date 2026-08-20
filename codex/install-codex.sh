@@ -82,6 +82,13 @@ if ! install_asset "bwrap-$TARGET.tar.gz" "$BIN_DIR/codex-resources/bwrap"; then
     echo "[install-codex] bubblewrap unavailable; only sandbox_mode=danger-full-access will work" >&2
 fi
 
+# Code mode runs tool calls as code in a separate host process, which Codex
+# looks for next to its own executable. Without it Codex warns on every start
+# and fails code mode closed, so ship it too.
+if ! install_asset "codex-code-mode-host-$TARGET.tar.gz" "$BIN_DIR/codex-code-mode-host"; then
+    echo "[install-codex] code-mode host unavailable; code mode will stay disabled" >&2
+fi
+
 "$BIN_DIR/codex" --version > /dev/null 2>&1 || {
     echo "[install-codex] the installed binary does not run" >&2
     exit 1
