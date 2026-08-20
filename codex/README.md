@@ -87,7 +87,20 @@ it actually works on your system.
 
 The `homeassistant` MCP server ([hass-mcp](https://pypi.org/project/hass-mcp/))
 is registered automatically and talks to Supervisor over the add-on's own token.
-The token is passed through the environment and never written to disk.
+
+Codex gives an MCP server only a fixed allowlist of environment variables -
+`HOME`, `PATH`, `SHELL`, `USER`, `LANG` and a few more - so the generated config
+names the two extra ones to forward:
+
+```toml
+[mcp_servers.homeassistant]
+command = "hass-mcp"
+env_vars = ["HA_URL", "HA_TOKEN"]
+```
+
+`env_vars` forwards the values from the running process, so the Supervisor token
+is never written to a file. An `env` table would work too, but it would put the
+live token into the config on disk.
 
 ```bash
 codex mcp list       # what is registered

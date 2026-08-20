@@ -77,7 +77,13 @@ fi
     # root with the HA config directory mounted read-write.
     printf '[projects."%s"]\ntrust_level = "trusted"\n' "$WORKDIR"
     if [ "$ENABLE_MCP" = "true" ]; then
-        printf '\n[mcp_servers.homeassistant]\ncommand = "hass-mcp"\n'
+        # Codex hands an MCP server a fixed allowlist of variables - HOME, PATH,
+        # SHELL, USER, LANG and a few more - and nothing else, so hass-mcp never
+        # saw the credentials this script exports. env_vars names the extra ones
+        # to forward from the running process, which keeps the Supervisor token
+        # out of every file on disk; the alternative, an `env` table, would write
+        # the live token into this config.
+        printf '\n[mcp_servers.homeassistant]\ncommand = "hass-mcp"\nenv_vars = ["HA_URL", "HA_TOKEN"]\n'
     fi
     if [ "$ENABLE_PLAYWRIGHT" = "true" ]; then
         printf '\n[mcp_servers.playwright]\ncommand = "npx"\n'
@@ -86,15 +92,17 @@ fi
 } > "$SYSTEM_CONFIG"
 
 if [ "$ENABLE_MCP" = "true" ]; then
-    # Confirm Codex really merges the system layer. If a future release stops
-    # doing so, register the server the way `codex mcp add` does instead, in the
-    # user config, rather than silently starting without Home Assistant access.
+    # Confirm Codex really merges the system layer, so a release that stopped
+    # doing so shows up here instead of as a Codex that quietly cannot see Home
+    # Assistant. There is no safe automatic fallback: `codex mcp add` writes to
+    # the user config and cannot set env_vars, so the only way to give hass-mcp
+    # its token from there would be to persist the token itself.
     if codex mcp list 2>/dev/null | grep -q '^homeassistant[[:space:]]'; then
         echo '[INFO] Home Assistant MCP server configured'
     else
-        echo "[WARN] The system config layer did not register the MCP server; writing it to $CODEX_HOME/config.toml instead"
-        codex mcp remove homeassistant > /dev/null 2>&1 || true
-        codex mcp add homeassistant -- hass-mcp || echo '[ERROR] Could not register the homeassistant MCP server'
+        echo '[ERROR] Codex did not pick up /etc/codex/config.toml, so the Home Assistant'
+        echo '[ERROR] MCP server is not registered. Report this - it means the config layer'
+        echo '[ERROR] this add-on relies on has changed.'
     fi
 else
     echo '[INFO] Home Assistant MCP disabled'

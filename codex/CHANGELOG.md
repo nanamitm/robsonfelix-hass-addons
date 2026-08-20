@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-08-20
+
+### Fixed
+- hass-mcp reported that no Home Assistant token was configured, so Codex could
+  not read entities or call services. The add-on exports `HA_URL` and `HA_TOKEN`
+  into its own environment, but Codex hands an MCP server only a fixed allowlist
+  - `HOME`, `LOGNAME`, `PATH`, `SHELL`, `USER`, `LANG`, `LC_ALL`, `TERM` - plus
+  whatever `env_vars` names, and drops everything else
+  (`create_env_for_mcp_server` in `codex-rs/rmcp-client/src/utils.rs`). The
+  generated config now sets `env_vars = ["HA_URL", "HA_TOKEN"]`, which forwards
+  the values from the running process and still keeps the Supervisor token out
+  of every file on disk
+
+### Changed
+- When Codex does not pick up `/etc/codex/config.toml`, the startup script now
+  reports it as an error instead of falling back to `codex mcp add`. That
+  fallback wrote to the user config, which cannot express `env_vars`, so the
+  only way to give hass-mcp its token from there would be to persist the token
+
 ## [0.1.1] - 2026-08-20
 
 ### Fixed
