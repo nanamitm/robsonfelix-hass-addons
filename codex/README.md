@@ -139,9 +139,10 @@ The sensors arrive by MQTT discovery on a device called **Codex Usage**:
 
 Which window is which is decided by the length the endpoint reports for it, not
 by the order it lists them in - those two do not correspond. A window the
-endpoint does not return at all stays `unknown`: with no recent activity it
-often reports only the weekly one, and the five-hour sensors fill in once there
-is five-hour usage to report.
+endpoint does not return at all makes its own sensors `unavailable`, rather
+than leaving the last figure they saw on display: with no recent activity it
+often reports only the weekly one, and the five-hour sensors come back once
+there is five-hour usage to report.
 
 The two reset sensors are `timestamp` entities holding an absolute time, not
 preformatted text, so Home Assistant renders them in your own timezone and

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-08-25
+
+### Fixed
+- 0.2.2 shipped an empty `config.yaml`, which took the add-on out of the store
+  entirely - an add-on without a config is not an add-on the Supervisor can see.
+  Installed copies kept running on 0.2.1. The file is restored unchanged from
+  0.2.1 apart from the version, so 0.2.2's actual fix reaches an installed
+  add-on for the first time here
+- `codex/README.md` still described an absent window as showing `unknown`; since
+  0.2.2 those sensors go `unavailable`
+
 ## [0.2.2] - 2026-08-25
 
 ### Fixed
