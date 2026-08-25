@@ -1,11 +1,16 @@
 // Home Assistant MQTT Discovery payloads for the usage sensors.
 
 // The `is not none` test rather than a `default` filter is what keeps a
-// legitimate 0 percent from being blanked out. The empty string is only a
-// fallback - a field that is null takes the entity unavailable through
-// `availabilityTemplate` below, so this value never reaches the state machine.
+// legitimate 0 percent from being blanked out.
+//
+// A null field renders as "None", the payload the MQTT integration reads as "no
+// value". An empty string would do the same job but it is logged as `Invalid
+// state message '' from 'codex/usage/state'` on every single poll, and a
+// warning a minute for a state the add-on is deliberately reporting is noise in
+// a log people read to find real problems. The entity is unavailable either way
+// - `availabilityTemplate` below is what decides that.
 function template(key) {
-  return `{{ value_json.${key} if value_json.${key} is not none else '' }}`;
+  return `{{ value_json.${key} if value_json.${key} is not none else 'None' }}`;
 }
 
 // Each sensor is available only while the endpoint is actually reporting its

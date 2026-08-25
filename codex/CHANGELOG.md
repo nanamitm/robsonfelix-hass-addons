@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4] - 2026-08-25
+
+### Fixed
+- A sensor whose field the endpoint is not reporting logged
+  `Invalid state message '' from 'codex/usage/state'` in the Home Assistant log
+  on every poll - a warning a minute for a state the add-on is deliberately
+  reporting, in a log people read to find real problems. Those fields now render
+  as `None`, the payload the MQTT integration reads as "no value". The sensors
+  are unavailable either way; only the noise is gone
+
 ## [0.2.3] - 2026-08-25
 
 ### Fixed
