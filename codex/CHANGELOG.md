@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-08-25
+
+### Added
+- Codex's own rate-limit usage is now published to Home Assistant as MQTT
+  sensors, on a device called `Codex Usage`: 5-hour and weekly used/remaining
+  percentages, both reset times, plan, credits and limit status. It reads the
+  sign-in that already exists in `$CODEX_HOME` and takes the broker details from
+  the Supervisor, so there is nothing to configure - an MQTT broker and a
+  `codex login` sign-in are all it needs. Turn it off with `usage_sensors`, and
+  set the refresh rate with `usage_poll_seconds`
+- `services: mqtt:want` in the add-on config. "want" rather than "need" because
+  the add-on is a terminal first: without a broker it logs a warning and starts
+  as it always did
+
+### Notes
+- The bridge only ever reads `auth.json`, never writes it. Refreshing an OAuth
+  token rotates the refresh token, so refreshing behind the CLI's back could
+  revoke the token it is holding and drop the user at a sign-in prompt. An
+  expired token instead makes the sensors unavailable until Codex is used in the
+  terminal once
+- Reset times are published as absolute `timestamp` entities rather than
+  preformatted strings, so Home Assistant renders them in the user's timezone
+- The broker password is exported inside a subshell and never named on a command
+  line, so it reaches neither the terminal's environment nor `ps`
+
 ## [0.1.4] - 2026-08-20
 
 ### Fixed

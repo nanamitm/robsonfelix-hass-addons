@@ -29,6 +29,11 @@ bump never reaches an installed add-on. Follow the existing format:
     at startup when `auto_update_codex` is on
   - `rootfs/usr/bin/codex-addon-start.sh` - Entrypoint: renders the add-on
     options into `/etc/codex/config.toml`, then execs ttyd
+  - `rootfs/usr/share/codex-addon/usage-bridge/` - Publishes Codex's rate-limit
+    usage to Home Assistant over MQTT. Dependency-free Node, started in the
+    background by the entrypoint. **It must never write to `auth.json`**: the
+    CLI in the terminal owns that file, and refreshing rotates the refresh token
+    out from under it
   - `rootfs/usr/share/codex-addon/AGENTS.md` - Global instructions installed
     into `$CODEX_HOME`. **When you change this file, append the outgoing
     content's sha256 to `AGENTS.md.superseded`**; the entrypoint uses that list

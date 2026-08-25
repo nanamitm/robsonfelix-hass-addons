@@ -1,6 +1,6 @@
 name: Codex
 description: Run OpenAI Codex CLI inside Home Assistant to create automations, debug issues, and manage your smart home configuration
-version: "0.1.4"
+version: "0.2.0"
 slug: codex
 url: https://github.com/nanamitm/robsonfelix-hass-addons
 # Codex publishes Linux binaries for x86_64 and aarch64 musl only, so armv7,
@@ -19,6 +19,10 @@ panel_icon: mdi:code-braces-box
 panel_title: Codex
 homeassistant_api: true
 auth_api: true
+# "want", not "need": the usage sensors use the broker when one is configured,
+# but the add-on is a terminal first and must still start without MQTT.
+services:
+  - mqtt:want
 hassio_api: true
 hassio_role: manager
 uart: true
@@ -44,6 +48,8 @@ options:
   working_directory: /homeassistant
   session_persistence: true
   auto_update_codex: true
+  usage_sensors: true
+  usage_poll_seconds: 60
 schema:
   enable_mcp: bool
   enable_playwright_mcp: bool
@@ -57,5 +63,7 @@ schema:
   working_directory: str
   session_persistence: bool
   auto_update_codex: bool
+  usage_sensors: bool
+  usage_poll_seconds: int(30,3600)
 environment:
   TERM: xterm-256color

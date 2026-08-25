@@ -104,6 +104,10 @@ COPY rootfs /
 RUN chmod +x /usr/bin/codex-addon-start.sh && \
     echo 'source ~/.bashrc' > /root/.profile
 
+# The usage bridge has no dependencies to install, but a syntax error in it
+# would otherwise only surface as a restart loop on a user's system.
+RUN for f in /usr/share/codex-addon/usage-bridge/*.js; do node --check "$f"; done
+
 ENV PATH="/root/.local/bin:${PATH}"
 
 WORKDIR /homeassistant

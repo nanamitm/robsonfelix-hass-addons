@@ -72,6 +72,20 @@ configuration:
     description: >-
       Check for and install the newest Codex CLI release on add-on startup.
       Keeps Codex current without requiring add-on version bumps.
+  usage_sensors:
+    name: Usage Sensors
+    description: >-
+      Publish Codex's 5-hour and weekly rate-limit usage to Home Assistant as
+      MQTT sensors, using the account you are already signed in to here. Needs
+      an MQTT broker, such as the Mosquitto broker add-on; the startup log says
+      so when there is none. The sensors appear on their own "Codex Usage"
+      device and are unavailable while nobody is signed in.
+  usage_poll_seconds:
+    name: Usage Poll Interval
+    description: >-
+      How often the usage sensors are refreshed, in seconds (30-3600). Every
+      refresh is one request to OpenAI, so there is little reason to go below
+      the default of 60.
 
 network:
   7681/tcp: Web Terminal (ttyd)

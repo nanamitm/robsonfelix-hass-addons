@@ -39,6 +39,8 @@ THEME=$(opt '.terminal_theme // "dark"')
 WORKDIR=$(opt '.working_directory // "/homeassistant"')
 SESSION_PERSIST=$(opt 'if .session_persistence == null then true else .session_persistence end')
 AUTO_UPDATE=$(opt '.auto_update_codex // false')
+USAGE_SENSORS=$(opt 'if .usage_sensors == null then true else .usage_sensors end')
+USAGE_POLL=$(opt '.usage_poll_seconds // 60')
 
 # A working_directory that does not exist would otherwise take the entrypoint
 # down before ttyd starts, leaving no terminal to correct the option from.
@@ -54,7 +56,8 @@ if [ "$AUTO_UPDATE" = "true" ]; then
     # runs, so this really does leave a working install behind.
     /usr/local/bin/install-codex.sh "$(uname -m)" || echo '[WARN] Update failed; the previous version is untouched'
 fi
-echo "[INFO] Codex $(timeout 30 codex --version 2>/dev/null || echo '(not responding)')"
+CODEX_VERSION=$(timeout 30 codex --version 2>/dev/null || echo '(not responding)')
+echo "[INFO] Codex $CODEX_VERSION"
 
 # Global instructions, refreshed so that add-on updates ship new guidance - but
 # only while the file is still the copy this add-on wrote. $CODEX_HOME/AGENTS.md
@@ -155,6 +158,68 @@ fi
 
 if [ ! -f "$CODEX_HOME/auth.json" ]; then
     echo '[INFO] Not signed in yet. In the terminal, run: codex login --device-auth'
+fi
+
+# Publishes Codex's own rate-limit usage to Home Assistant as MQTT sensors.
+# It runs beside the terminal rather than as its own add-on because that is the
+# only place the Codex sign-in exists: it reads $CODEX_HOME/auth.json, and never
+# writes to it - the CLI in the terminal owns that file, and a refresh from
+# behind its back rotates the refresh token out from under it.
+start_usage_bridge() {
+    local service host port ssl username password
+
+    # `mqtt:want` means the Supervisor hands over the broker details when one is
+    # configured and declines when there is none, so a failure here is a missing
+    # broker rather than a broken add-on.
+    service=$(curl -sf -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+        http://supervisor/services/mqtt 2>/dev/null) || service=''
+    if [ -z "$service" ]; then
+        echo '[WARN] usage_sensors is on, but this add-on has no MQTT broker.'
+        echo '[WARN] Install and start the Mosquitto broker add-on, then restart this one.'
+        return
+    fi
+
+    host=$(echo "$service" | jq -r '.data.host // empty')
+    port=$(echo "$service" | jq -r '.data.port // 1883')
+    ssl=$(echo "$service" | jq -r '.data.ssl // false')
+    username=$(echo "$service" | jq -r '.data.username // empty')
+    password=$(echo "$service" | jq -r '.data.password // empty')
+
+    if [ -z "$host" ]; then
+        echo '[WARN] The MQTT service gave no hostname; usage sensors are off'
+        return
+    fi
+
+    # A subshell so the broker password stays out of the environment ttyd hands
+    # to the user's shell, and out of `ps`, which naming them on a command line
+    # would not.
+    (
+        # The bridge talks to OpenAI and to the broker, and to nothing else in
+        # Home Assistant, so it has no use for the Supervisor credentials this
+        # script exports for hass-mcp.
+        unset SUPERVISOR_TOKEN HA_TOKEN HA_URL
+
+        export MQTT_HOST="$host" MQTT_PORT="$port" MQTT_SSL="$ssl" \
+            MQTT_USERNAME="$username" MQTT_PASSWORD="$password" \
+            CODEX_HOME="$CODEX_HOME" CODEX_VERSION="$CODEX_VERSION" \
+            USAGE_POLL_SECONDS="$USAGE_POLL"
+
+        # The bridge exits instead of reconnecting, so restarting it here is the
+        # whole recovery story - for a broker that reboots as much as for one
+        # that was not up yet when the add-on started.
+        while true; do
+            node /usr/share/codex-addon/usage-bridge/index.js || true
+            sleep 30
+        done
+    ) &
+
+    echo "[INFO] Usage sensors publishing to $host:$port every ${USAGE_POLL}s"
+}
+
+if [ "$USAGE_SENSORS" = "true" ]; then
+    start_usage_bridge
+else
+    echo '[INFO] Usage sensors disabled'
 fi
 
 if [ "$THEME" = "dark" ]; then

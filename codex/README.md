@@ -28,6 +28,7 @@ Code add-on this is derived from, armv7, armhf and i386 are not supported.
 - **hass-mcp Integration**: Direct control of HA entities and services
 - **Session Persistence**: Optional tmux integration to preserve sessions across page refreshes
 - **Customizable Theme**: Choose between dark and light terminal themes
+- **Usage Sensors**: Codex's own 5-hour and weekly rate limits, published to Home Assistant over MQTT
 - **Secure Authentication**: Codex handles its own sign-in; no API key in the add-on config
 
 ## Setup
@@ -107,6 +108,73 @@ codex mcp list       # what is registered
 ha core check        # validate configuration before restarting
 ha core restart
 ```
+
+## Usage Sensors
+
+The add-on can publish how much of your Codex rate limit you have used to Home
+Assistant, so a dashboard can show it and an automation can warn you before you
+run out. It is on by default and needs no configuration: it reads the account
+you are already signed in to here, and gets the broker details from the
+Supervisor.
+
+Requirements: an MQTT broker - the
+[Mosquitto broker](https://github.com/home-assistant/addons/tree/master/mosquitto)
+add-on is the usual one - and a `codex login` sign-in. An API-key sign-in has no
+ChatGPT account behind it and cannot report usage. The startup log says which of
+these is missing.
+
+The sensors arrive by MQTT discovery on a device called **Codex Usage**:
+
+| Entity | Example |
+|--------|---------|
+| `sensor.codex_usage_5h_used` | `49.4 %` |
+| `sensor.codex_usage_5h_remaining` | `50.6 %` |
+| `sensor.codex_usage_5h_reset` | timestamp |
+| `sensor.codex_usage_weekly_used` | `8 %` |
+| `sensor.codex_usage_weekly_remaining` | `92 %` |
+| `sensor.codex_usage_weekly_reset` | timestamp |
+| `sensor.codex_usage_credits` | `0` |
+| `sensor.codex_usage_plan` | `plus` |
+| `sensor.codex_usage_limit_status` | `ok` |
+
+The two reset sensors are `timestamp` entities holding an absolute time, not
+preformatted text, so Home Assistant renders them in your own timezone and
+`as_timestamp()` works in templates. The `plan` sensor carries the whole
+snapshot - window lengths, credit flags, capture time - in its attributes.
+
+A gauge and a countdown to the next reset:
+
+```yaml
+type: gauge
+entity: sensor.codex_usage_5h_used
+name: Codex 5h
+min: 0
+max: 100
+severity: { green: 0, yellow: 70, red: 90 }
+```
+
+```yaml
+type: entities
+entities:
+  - entity: sensor.codex_usage_5h_reset
+    name: Resets in
+    format: relative
+```
+
+### What it does to your sign-in: nothing
+
+The bridge only ever reads `auth.json`. Refreshing an OAuth token rotates the
+refresh token, so a background refresh would invalidate the one the CLI in the
+terminal is holding and could drop you back at a sign-in prompt. Instead, an
+expired token makes the sensors unavailable and says so in the log - use Codex
+in the terminal once and the CLI refreshes it itself.
+
+Nothing about your account leaves the add-on beyond the usage request itself:
+the published payload carries percentages, reset times, plan and credits, and no
+tokens.
+
+Turn `usage_sensors` off to stop publishing. The entities stay in Home Assistant
+until you delete the `Codex Usage` device.
 
 ## Updating Codex
 
