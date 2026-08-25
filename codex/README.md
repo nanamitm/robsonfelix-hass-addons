@@ -145,7 +145,7 @@ is five-hour usage to report.
 
 The two reset sensors are `timestamp` entities holding an absolute time, not
 preformatted text, so Home Assistant renders them in your own timezone and
-`as_timestamp()` works in templates. The `plan` sensor carries the whole
+`as_timestamp()` works in templates. The `limit status` sensor carries the whole
 snapshot - window lengths, credit flags, capture time - in its attributes.
 
 A gauge and a countdown to the next reset:

@@ -1,12 +1,21 @@
 // Home Assistant MQTT Discovery payloads for the usage sensors.
 
-// A null field renders as an empty string, which the MQTT integration treats as
-// "no update" and skips. Without this, `None` would reach Home Assistant as a
-// literal state and a timestamp sensor would log an error on every poll. The
-// `is not none` test rather than a `default` filter is what keeps a legitimate
-// 0 percent from being blanked out.
+// The `is not none` test rather than a `default` filter is what keeps a
+// legitimate 0 percent from being blanked out. The empty string is only a
+// fallback - a field that is null takes the entity unavailable through
+// `availabilityTemplate` below, so this value never reaches the state machine.
 function template(key) {
   return `{{ value_json.${key} if value_json.${key} is not none else '' }}`;
+}
+
+// Each sensor is available only while the endpoint is actually reporting its
+// field. Skipping the update instead - which is what an empty state payload
+// does - would leave the last value it ever saw on display indefinitely, and a
+// stale percentage is indistinguishable from a current one. The endpoint really
+// does drop a whole window: an account with no recent activity gets no
+// five-hour window at all.
+function availabilityTemplate(key) {
+  return `{{ 'online' if value_json.${key} is not none else 'offline' }}`;
 }
 
 const SENSORS = [
@@ -69,6 +78,12 @@ const SENSORS = [
     name: "Limit Status",
     icon: "mdi:alert-circle-outline",
     entity_category: "diagnostic",
+    // The full snapshot rides along here - window lengths, credit flags, the
+    // capture time - so everything the endpoint returned stays inspectable
+    // without turning each field into its own entity. This sensor carries it
+    // because its value is computed rather than read, so it is never null and
+    // never goes unavailable while the bridge is up.
+    attributes: true,
   },
   {
     key: "plan",
@@ -76,10 +91,6 @@ const SENSORS = [
     name: "Plan",
     icon: "mdi:card-account-details-outline",
     entity_category: "diagnostic",
-    // The full snapshot rides along here - window lengths, credit flags, the
-    // capture time - so everything the endpoint returned stays inspectable
-    // without turning each field into its own entity.
-    attributes: true,
   },
 ];
 
@@ -103,9 +114,22 @@ export function discoveryMessages(config) {
       object_id: `${config.deviceId}_${sensor.id}`,
       state_topic: config.stateTopic,
       value_template: template(sensor.key),
-      availability_topic: config.availabilityTopic,
-      payload_available: "online",
-      payload_not_available: "offline",
+      // Both conditions have to hold: the bridge is up, and this particular
+      // field is present in the snapshot it published.
+      availability_mode: "all",
+      availability: [
+        {
+          topic: config.availabilityTopic,
+          payload_available: "online",
+          payload_not_available: "offline",
+        },
+        {
+          topic: config.stateTopic,
+          value_template: availabilityTemplate(sensor.key),
+          payload_available: "online",
+          payload_not_available: "offline",
+        },
+      ],
       ...(sensor.unit ? { unit_of_measurement: sensor.unit } : {}),
       ...(sensor.icon ? { icon: sensor.icon } : {}),
       ...(sensor.device_class ? { device_class: sensor.device_class } : {}),

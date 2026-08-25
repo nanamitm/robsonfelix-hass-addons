@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-08-25
+
+### Fixed
+- A sensor whose field the endpoint stopped reporting kept showing the last
+  value it ever saw. Rendering an empty state payload makes the MQTT
+  integration skip the update, so after 0.2.1 moved the weekly figures to the
+  weekly sensors, the five-hour ones went on displaying the weekly numbers they
+  had been given by mistake - a stale percentage that looks exactly like a
+  current one. Every sensor now has its own availability template alongside the
+  bridge's, so a field that is absent takes just that sensor unavailable
+- The full snapshot moved from the `plan` sensor's attributes to `limit status`,
+  whose value is computed rather than read and so is never absent
+
 ## [0.2.1] - 2026-08-25
 
 ### Fixed
