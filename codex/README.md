@@ -137,6 +137,12 @@ The sensors arrive by MQTT discovery on a device called **Codex Usage**:
 | `sensor.codex_usage_plan` | `plus` |
 | `sensor.codex_usage_limit_status` | `ok` |
 
+Which window is which is decided by the length the endpoint reports for it, not
+by the order it lists them in - those two do not correspond. A window the
+endpoint does not return at all stays `unknown`: with no recent activity it
+often reports only the weekly one, and the five-hour sensors fill in once there
+is five-hour usage to report.
+
 The two reset sensors are `timestamp` entities holding an absolute time, not
 preformatted text, so Home Assistant renders them in your own timezone and
 `as_timestamp()` works in templates. The `plan` sensor carries the whole

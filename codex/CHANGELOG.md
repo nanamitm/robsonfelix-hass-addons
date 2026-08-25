@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-08-25
+
+### Fixed
+- The five-hour sensors showed weekly figures. The usage endpoint's
+  `primary_window` and `secondary_window` do not correspond to the five-hour and
+  weekly limits: an account with no recent activity gets the *weekly* window as
+  `primary_window` and a null `secondary_window`, so a week-long window with a
+  reset six days out was being published as "5h Reset". Windows are now
+  identified by their own stated length - up to a day is the short window,
+  longer is the long one - and a window the endpoint does not return stays
+  unknown instead of being filled with the other one's numbers
+- `limit_status` was always `ok`. `rate_limit_reached_type` is null in the
+  normal case, so the `limit_reached` and `allowed` booleans beside it are now
+  what decide the status
+- Windows listed in `additional_rate_limits` are picked up as well, whether the
+  entries are windows themselves or wrappers around one
+
 ## [0.2.0] - 2026-08-25
 
 ### Added

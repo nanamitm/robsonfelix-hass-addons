@@ -56,54 +56,120 @@ function normalizeWindow(window) {
   }
 
   const used = asNumber(window.used_percent);
-  const windowSeconds = asNumber(window.limit_window_seconds);
-  const minutes = asNumber(window.window_minutes);
+  const seconds = windowSeconds(window);
 
   return {
     used_percent: used === null ? null : Math.round(used * 10) / 10,
     remaining_percent:
       used === null ? null : Math.round((100 - used) * 10) / 10,
-    window_minutes:
-      minutes ?? (windowSeconds === null ? null : Math.round(windowSeconds / 60)),
+    window_minutes: seconds === null ? null : Math.round(seconds / 60),
     reset_at: resetTimestamp(window),
   };
 }
 
-export function toState(payload) {
-  const limits = payload?.rate_limit ?? payload?.rateLimits ?? {};
-  const primary = normalizeWindow(
-    firstOf(limits.primary_window, limits.primary),
-  );
-  const secondary = normalizeWindow(
-    firstOf(limits.secondary_window, limits.secondary),
-  );
-  const credits = payload?.credits ?? {};
+function windowSeconds(window) {
+  const seconds = asNumber(window.limit_window_seconds);
+  if (seconds !== null && seconds > 0) return seconds;
+  const minutes = asNumber(window.window_minutes);
+  return minutes !== null && minutes > 0 ? minutes * 60 : null;
+}
 
-  // "unknown" is what the endpoint reports when nothing is throttled, which
-  // reads as a fault in Home Assistant. Anything else is passed through as-is
-  // so a new kind of limit is visible rather than swallowed.
+// Anything up to a day is the short window, anything longer is the long one.
+// Codex's are five hours and a week, with nothing in between.
+const SHORT_WINDOW_MAX_SECONDS = 24 * 60 * 60;
+
+// The endpoint's own names do not say which limit is which. On a Plus account
+// with no recent activity it returns the *weekly* window as `primary_window`
+// and leaves `secondary_window` null, so trusting the names puts week-long
+// figures on the five-hour sensors. The window's own stated length is the only
+// thing that actually identifies it, so that is what is used - and a window
+// that is simply absent stays absent rather than being filled with the other
+// one's numbers.
+function classifyWindows(payload) {
+  const limits = payload?.rate_limit ?? payload?.rateLimits ?? {};
+  const extra = Array.isArray(payload?.additional_rate_limits)
+    ? payload.additional_rate_limits
+    : [];
+
+  const candidates = [
+    limits.primary_window,
+    limits.primary,
+    limits.secondary_window,
+    limits.secondary,
+    // Entries here have appeared both as windows and as wrappers around one.
+    ...extra.flatMap((entry) => [entry, entry?.window, entry?.rate_limit]),
+  ].filter(
+    (window) =>
+      window &&
+      typeof window === "object" &&
+      asNumber(window.used_percent) !== null,
+  );
+
+  let short = null;
+  let long = null;
+
+  const measured = candidates
+    .filter((window) => windowSeconds(window) !== null)
+    .sort((a, b) => windowSeconds(a) - windowSeconds(b));
+
+  for (const window of measured) {
+    if (windowSeconds(window) <= SHORT_WINDOW_MAX_SECONDS) short ??= window;
+    else long ??= window;
+  }
+
+  // A window that does not say how long it is falls back to the order the
+  // endpoint listed it in, which is the best guess left.
+  for (const window of candidates) {
+    if (windowSeconds(window) !== null) continue;
+    if (!short) short = window;
+    else if (!long) long = window;
+  }
+
+  return { short, long };
+}
+
+// `rate_limit_reached_type` is null in the normal case, so the booleans beside
+// it are what actually say whether anything is throttled.
+function limitStatus(payload) {
+  const limits = payload?.rate_limit ?? payload?.rateLimits ?? {};
   const reached = firstOf(
     payload?.rate_limit_reached_type?.kind,
     payload?.rate_limit_reached_type,
   );
-  const limitStatus =
-    !reached || String(reached).toLowerCase() === "unknown" ? "ok" : String(reached);
 
+  if (reached && String(reached).toLowerCase() !== "unknown") {
+    return String(reached);
+  }
+  if (limits.limit_reached === true || limits.allowed === false) {
+    return "limited";
+  }
+  return "ok";
+}
+
+export function toState(payload) {
+  const { short, long } = classifyWindows(payload);
+  const fiveHour = normalizeWindow(short);
+  const weekly = normalizeWindow(long);
+  const credits = payload?.credits ?? {};
+
+  // Only usage is published. The endpoint also returns the account id, user id
+  // and e-mail address, and none of them belong on an MQTT topic.
   return {
     captured_at: new Date().toISOString(),
     plan: firstOf(payload?.plan_type, payload?.planType),
-    five_hour_used_percent: primary.used_percent,
-    five_hour_remaining_percent: primary.remaining_percent,
-    five_hour_window_minutes: primary.window_minutes,
-    five_hour_reset_at: primary.reset_at,
-    weekly_used_percent: secondary.used_percent,
-    weekly_remaining_percent: secondary.remaining_percent,
-    weekly_window_minutes: secondary.window_minutes,
-    weekly_reset_at: secondary.reset_at,
+    five_hour_used_percent: fiveHour.used_percent,
+    five_hour_remaining_percent: fiveHour.remaining_percent,
+    five_hour_window_minutes: fiveHour.window_minutes,
+    five_hour_reset_at: fiveHour.reset_at,
+    weekly_used_percent: weekly.used_percent,
+    weekly_remaining_percent: weekly.remaining_percent,
+    weekly_window_minutes: weekly.window_minutes,
+    weekly_reset_at: weekly.reset_at,
+    // The balance has been seen as both a number and a string.
     credits_balance: asNumber(credits.balance),
     credits_has_credits: Boolean(credits.has_credits),
     credits_unlimited: Boolean(credits.unlimited),
-    limit_status: limitStatus,
+    limit_status: limitStatus(payload),
   };
 }
 
