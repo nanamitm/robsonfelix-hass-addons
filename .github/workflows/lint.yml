@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install pyyaml
@@ -27,10 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     # Advisory on purpose. This linter also reports style opinions that this
     # add-on does not follow: it treats writing a default value out explicitly
-    # as an error, and `init: true` is written out on purpose - AGENTS.md
-    # records why, and leaving it implicit would hide a choice that matters on
-    # an s6-overlay base image. Its findings are worth reading; they are not
-    # worth blocking a release that fixes something.
+    # as an error. Its findings are worth reading; they are not worth blocking
+    # a release that fixes something.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v5

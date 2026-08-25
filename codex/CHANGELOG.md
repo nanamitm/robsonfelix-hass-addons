@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.5] - 2026-08-25
+
+### Changed
+- Removed explicit `startup`, `boot`, and `init` values that match Home
+  Assistant's defaults, and the redundant `uart` flag already covered by
+  `full_access`. This clears the add-on linter's error annotations without
+  changing the add-on's runtime behavior
+- Updated the Python setup action to v6 so GitHub Actions no longer warns that
+  its Node.js 20 runtime is deprecated
+
 ## [0.2.4] - 2026-08-25
 
 ### Fixed
