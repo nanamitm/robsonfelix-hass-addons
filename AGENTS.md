@@ -19,6 +19,9 @@ bump never reaches an installed add-on. Follow the existing format:
 
 ## Project Structure
 
+- `.github/workflows/lint.yml` - Runs on every push. `check_addon_config.py`
+  enforces structure and blocks; the third-party add-on linter is advisory,
+  because it errors on defaults this repo writes out on purpose
 - `repository.yaml` - Add-on repository metadata
 - `codex/` - Codex add-on
   - `config.yaml` - Add-on configuration (bump version here)
