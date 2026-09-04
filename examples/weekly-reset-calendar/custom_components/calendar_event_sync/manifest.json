@@ -1,0 +1,8 @@
+{
+  "domain": "calendar_event_sync",
+  "name": "Calendar Event Sync",
+  "codeowners": [],
+  "documentation": "https://github.com/nanamitm/robsonfelix-hass-addons/tree/main/examples/weekly-reset-calendar",
+  "iot_class": "local_push",
+  "version": "1.0.0"
+}

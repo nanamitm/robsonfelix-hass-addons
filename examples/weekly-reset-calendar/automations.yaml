@@ -1,0 +1,43 @@
+- alias: Codex weekly reset to calendar
+  triggers:
+    - trigger: state
+      entity_id: sensor.codex_usage_weekly_reset
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.to_state is not none
+           and trigger.to_state.state not in ['unknown', 'unavailable'] }}
+  actions:
+    - action: calendar_event_sync.replace_event
+      data:
+        entity_id: calendar.codex
+        summary: Codex weekly reset
+        description: The weekly usage limit resets
+        start_date_time: >-
+          {{ as_local(as_datetime(states('sensor.codex_usage_weekly_reset'))).isoformat() }}
+        end_date_time: >-
+          {{ (as_local(as_datetime(states('sensor.codex_usage_weekly_reset')))
+              + timedelta(minutes=30)).isoformat() }}
+  mode: single
+
+- alias: Claude weekly reset to calendar
+  triggers:
+    - trigger: state
+      entity_id: sensor.claude_usage_weekly_reset
+  conditions:
+    - condition: template
+      value_template: >-
+        {{ trigger.to_state is not none
+           and trigger.to_state.state not in ['unknown', 'unavailable'] }}
+  actions:
+    - action: calendar_event_sync.replace_event
+      data:
+        entity_id: calendar.claude
+        summary: Claude weekly reset
+        description: The weekly usage limit resets
+        start_date_time: >-
+          {{ as_local(as_datetime(states('sensor.claude_usage_weekly_reset'))).isoformat() }}
+        end_date_time: >-
+          {{ (as_local(as_datetime(states('sensor.claude_usage_weekly_reset')))
+              + timedelta(minutes=30)).isoformat() }}
+  mode: single

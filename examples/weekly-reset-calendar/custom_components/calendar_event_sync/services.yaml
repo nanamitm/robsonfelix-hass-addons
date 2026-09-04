@@ -1,0 +1,29 @@
+replace_event:
+  name: Replace matching calendar event
+  description: Delete same-day events with the same summary, then create one event.
+  fields:
+    entity_id:
+      name: Calendar
+      required: true
+      selector:
+        entity:
+          domain: calendar
+    summary:
+      name: Summary
+      required: true
+      selector:
+        text:
+    description:
+      name: Description
+      selector:
+        text:
+    start_date_time:
+      name: Start
+      required: true
+      selector:
+        datetime:
+    end_date_time:
+      name: End
+      required: true
+      selector:
+        datetime:

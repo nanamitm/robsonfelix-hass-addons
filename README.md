@@ -17,6 +17,10 @@ Custom add-ons for Home Assistant.
 
 Or manually: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → Add `https://github.com/nanamitm/robsonfelix-hass-addons`
 
+## Examples
+
+- [Keep Codex and Claude weekly reset events in a Local Calendar](examples/weekly-reset-calendar)
+
 ## About this fork
 
 Forked from [robsonfelix/robsonfelix-hass-addons](https://github.com/robsonfelix/robsonfelix-hass-addons).
