@@ -20,7 +20,9 @@ jobs:
           python-version: "3.12"
       - run: pip install pyyaml
       - name: Check structure
-        run: python .github/scripts/check_addon_config.py
+        run: |
+          python .github/scripts/check_addon_config.py codex
+          python .github/scripts/check_addon_config.py claudecode
 
   addon-linter:
     name: Add-on linter (advisory)
@@ -35,6 +37,9 @@ jobs:
       - uses: frenck/action-addon-linter@v2
         with:
           path: "./codex"
+      - uses: frenck/action-addon-linter@v2
+        with:
+          path: "./claudecode"
 
   usage-bridge:
     name: Usage bridge
@@ -49,6 +54,10 @@ jobs:
           for f in codex/rootfs/usr/share/codex-addon/usage-bridge/*.js; do
             node --check "$f"
           done
+          for f in claudecode/rootfs/usr/share/claudecode-addon/usage-bridge/*.js; do
+            node --check "$f"
+          done
+          node --test claudecode/tests/*.test.js
 
   entrypoint:
     name: Entrypoint

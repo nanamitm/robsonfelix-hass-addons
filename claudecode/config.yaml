@@ -1,0 +1,63 @@
+name: Claude Code
+description: Run Claude Code AI assistant inside Home Assistant to create automations, debug issues, and manage your smart home configuration
+version: "1.3.0"
+slug: claudecode
+url: https://github.com/nanamitm/robsonfelix-hass-addons
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
+  - i386
+startup: application
+boot: auto
+init: true
+ingress: true
+ingress_port: 7681
+ingress_stream: true
+panel_icon: mdi:brain
+panel_title: Claude Code
+homeassistant_api: true
+auth_api: true
+services:
+  - mqtt:want
+hassio_api: true
+hassio_role: manager
+uart: true
+docker_api: true
+full_access: true
+map:
+  - homeassistant_config:rw
+  - ssl:ro
+  - share:rw
+  - media:rw
+  - addon_config:rw
+  - backup:ro
+options:
+  enable_mcp: true
+  enable_playwright_mcp: false
+  playwright_cdp_host: ""
+  terminal_font_size: 14
+  terminal_theme: dark
+  working_directory: /homeassistant
+  session_persistence: true
+  auto_update_claude: true
+  enable_remote_control: false
+  remote_control_session_prefix: HomeAssistant
+  usage_sensors: true
+  usage_poll_seconds: 300
+schema:
+  enable_mcp: bool
+  enable_playwright_mcp: bool
+  playwright_cdp_host: str?
+  terminal_font_size: int(10,24)
+  terminal_theme: list(dark|light)
+  working_directory: str
+  session_persistence: bool
+  auto_update_claude: bool
+  enable_remote_control: bool
+  remote_control_session_prefix: str
+  usage_sensors: bool
+  usage_poll_seconds: int(60,3600)
+environment:
+  TERM: xterm-256color

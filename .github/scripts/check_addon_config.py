@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-ADDON = Path("codex")
+ADDON = Path(sys.argv[1] if len(sys.argv) > 1 else "codex")
 REQUIRED = ("name", "version", "slug", "arch", "options", "schema")
 
 failures: list[str] = []
