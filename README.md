@@ -9,6 +9,7 @@ Custom add-ons for Home Assistant.
 | Add-on | Description |
 |--------|-------------|
 | [Codex](codex/) | OpenAI Codex CLI in the sidebar, for automations, debugging, and smart home management |
+| [Claude Code](claudecode/) | Anthropic Claude Code in the sidebar, with built-in MQTT usage and reset-time sensors |
 
 ## Installation
 
@@ -18,11 +19,20 @@ Or manually: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → *
 
 ## About this fork
 
-Forked from [robsonfelix/robsonfelix-hass-addons](https://github.com/robsonfelix/robsonfelix-hass-addons)
-to build the Codex add-on on top of its Claude Code add-on. The upstream add-ons
-themselves - Claude Code, Auto-Monocle and Playwright Browser - are not carried
-here; install those from the upstream repository so they update from their
-source. Their history is still in this repository's git log.
+Forked from [robsonfelix/robsonfelix-hass-addons](https://github.com/robsonfelix/robsonfelix-hass-addons).
+This fork provides the Codex add-on and an enhanced Claude Code add-on.
+
+The Claude Code add-on includes subscription-usage sensors through MQTT
+Discovery. It publishes session and weekly usage, reset times, Sonnet usage,
+extra usage, plan, and bridge status directly from the add-on. A separate HACS
+installation of
+[`hass-claude-usage`](https://github.com/trickv/hass-claude-usage) is not
+required. Reset timestamps are normalized to the nearest minute to prevent
+Anthropic's one-second timestamp jitter from repeatedly triggering Home
+Assistant automations.
+
+Auto-Monocle and Playwright Browser are not carried here; install those from the
+upstream repository. Their history remains in this repository's git log.
 
 ## License
 
