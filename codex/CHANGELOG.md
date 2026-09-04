@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.6] - 2026-09-04
+
+### Changed
+- Updated the supported-architecture note now that the repository's Claude Code
+  add-on also follows Home Assistant's amd64 and aarch64 support policy.
+
 ## [0.2.5] - 2026-08-25
 
 ### Changed

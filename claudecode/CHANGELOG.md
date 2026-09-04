@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] - 2026-09-04
+
+### Changed
+- Removed explicit `startup`, `boot`, and `init` values that match Home
+  Assistant defaults, along with the redundant `uart` flag already covered by
+  `full_access`.
+- Removed the deprecated `armv7`, `armhf`, and `i386` architectures, which Home
+  Assistant no longer supports as of 2025.12.
+
 ## [1.3.0] - 2026-09-04
 
 ### Added

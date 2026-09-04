@@ -23,7 +23,7 @@ claude "Why isn't my motion sensor automation working?"
 - **hass-mcp Integration**: Direct control of HA entities and services
 - **Session Persistence**: Optional tmux integration to preserve sessions across page refreshes
 - **Customizable Theme**: Choose between dark and light terminal themes
-- **Multi-Architecture**: Supports amd64, aarch64, armv7, armhf, and i386
+- **Multi-Architecture**: Supports amd64 and aarch64
 - **Secure Authentication**: Claude Code handles its own authentication securely
 - **Usage Sensors**: Session, weekly, Sonnet, reset-time, and extra-usage sensors through MQTT Discovery
 
