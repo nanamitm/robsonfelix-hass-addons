@@ -1,11 +1,11 @@
 # Changelog
 
-## 1.3.5
+## [1.3.5] - 2026-09-05
 
 - Remove obsolete `Glob(...)` permission entries that Claude Code warns about.
 - Honor the configured `working_directory`, with a safe `/homeassistant` fallback.
 
-## 1.3.4
+## [1.3.4] - 2026-09-05
 
 - Bump release to ensure Supervisor refreshes the startup quoting fix.
 
