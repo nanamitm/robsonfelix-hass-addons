@@ -223,6 +223,13 @@ CMD ["/bin/bash", "-c", "\
   USAGE_POLL=$(jq -r '.usage_poll_seconds // 300' /data/options.json) && \
   SETTINGS_FILE=/root/.claude/settings.json && \
   [ -f \"$SETTINGS_FILE\" ] || echo '{}' > \"$SETTINGS_FILE\" && \
+  if ! jq -e '.statusLine' \"$SETTINGS_FILE\" > /dev/null 2>&1; then \
+    jq '.statusLine = {"type":"command","command":"node /usr/share/claudecode-addon/usage-bridge/statusline.js"}' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
+    mv /tmp/settings.tmp \"$SETTINGS_FILE\" && \
+    echo '[INFO] Claude usage statusLine capture enabled'; \
+  else \
+    echo '[INFO] Preserving existing Claude statusLine configuration'; \
+  fi && \
   if jq -e '.mcpServers.homeassistant.env.HASS_TOKEN' \"$SETTINGS_FILE\" > /dev/null 2>&1; then \
     jq 'del(.mcpServers.homeassistant.env.HASS_TOKEN)' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
     mv /tmp/settings.tmp \"$SETTINGS_FILE\" && \
@@ -306,7 +313,8 @@ CMD ["/bin/bash", "-c", "\
         MQTT_SSL=$(printf '%s' \"$SERVICE\" | jq -r '.data.ssl // false') \
         MQTT_USERNAME=$(printf '%s' \"$SERVICE\" | jq -r '.data.username // empty') \
         MQTT_PASSWORD=$(printf '%s' \"$SERVICE\" | jq -r '.data.password // empty') \
-        CLAUDE_HOME=\"$PERSIST_DIR\" USAGE_POLL_SECONDS=\"$USAGE_POLL\" CLAUDE_VERSION=\"$BUILT_VERSION\"; \
+        CLAUDE_HOME=\"$PERSIST_DIR\" CLAUDE_STATUSLINE_FILE=\"$PERSIST_DIR/statusline-rate-limits.json\" \
+        USAGE_POLL_SECONDS=\"$USAGE_POLL\" CLAUDE_VERSION=\"$BUILT_VERSION\"; \
       node /usr/share/claudecode-addon/usage-bridge/index.js || true; sleep 10; \
     done) & \
   fi && \

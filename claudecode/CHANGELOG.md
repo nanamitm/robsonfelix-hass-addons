@@ -19,6 +19,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-09-05
+
+### Added
+- Capture Claude Code's official `rate_limits` from the statusLine when
+  available, prefer it over the OAuth usage API, and keep reset sensors online
+  during short API authentication failures.
+
 ## [1.2.65] - 2026-07-08
 
 ### Security

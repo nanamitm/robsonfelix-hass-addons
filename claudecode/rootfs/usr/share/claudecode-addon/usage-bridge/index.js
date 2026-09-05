@@ -1,6 +1,11 @@
 import { MqttClient } from "./mqtt.js";
 import { discoveryMessages } from "./entities.js";
-import { fetchUsage } from "./usage.js";
+import {
+  applyStatuslineState,
+  fetchUsage,
+  readStatuslineState,
+  statuslineOnlyState,
+} from "./usage.js";
 
 const pollSeconds = Math.max(60, Number.parseInt(process.env.USAGE_POLL_SECONDS ?? "300", 10));
 const baseTopic = process.env.MQTT_BASE_TOPIC || "claude/usage";
@@ -25,13 +30,21 @@ async function poll() {
   if (polling) return;
   polling = true;
   try {
+    const official = await readStatuslineState();
     const state = await fetchUsage({ claudeHome: config.claudeHome, endpoint: config.endpoint });
-    client.publish(config.stateTopic, JSON.stringify(state), { retain: true });
+    client.publish(config.stateTopic, JSON.stringify(applyStatuslineState(state, official)), { retain: true });
     availability("online");
     if (lastError) console.log("[usage] recovered; publishing usage again");
     lastError = null;
   } catch (error) {
-    availability("offline");
+    const official = await readStatuslineState();
+    if (official) {
+      client.publish(config.stateTopic, JSON.stringify(statuslineOnlyState(official)), { retain: true });
+      availability("online");
+      if (error.message !== lastError) console.log(`[usage] API unavailable; using fresh statusLine data: ${error.message}`);
+    } else {
+      availability("offline");
+    }
     if (error.message !== lastError) console.log(`[usage] sensors unavailable: ${error.message}`);
     lastError = error.message;
   } finally { polling = false; }

@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import { readClaudeAuth } from "./auth.js";
 
 const DEFAULT_ENDPOINT = "https://api.anthropic.com/api/oauth/usage";
@@ -57,6 +58,48 @@ export function toState(raw, plan = null) {
     extra_usage_limit: extraLimit,
     status: "ok",
   };
+}
+
+function officialWindow(window) {
+  if (!window || typeof window !== "object") return null;
+  return { used_percent: number(window.used_percent), reset_at: stableTimestamp(window.reset_at) };
+}
+
+export async function readStatuslineState(
+  filePath = process.env.CLAUDE_STATUSLINE_FILE
+    || "/homeassistant/.claudecode/statusline-rate-limits.json",
+  maxAgeMs = 15 * 60 * 1000,
+) {
+  try {
+    const state = JSON.parse(await fs.readFile(filePath, "utf8"));
+    const capturedAt = Date.parse(state.captured_at);
+    if (!Number.isFinite(capturedAt) || Date.now() - capturedAt > maxAgeMs) return null;
+    const session = officialWindow(state.session);
+    const weekly = officialWindow(state.weekly);
+    if (!session && !weekly) return null;
+    return { captured_at: state.captured_at, session, weekly };
+  } catch { return null; }
+}
+
+export function applyStatuslineState(state, official) {
+  if (!official) return state;
+  const result = { ...state, status_source: "statusline" };
+  if (official.session?.used_percent !== null) result.session_used_percent = official.session.used_percent;
+  if (official.session?.reset_at) result.session_reset_at = official.session.reset_at;
+  if (official.weekly?.used_percent !== null) result.weekly_used_percent = official.weekly.used_percent;
+  if (official.weekly?.reset_at) result.weekly_reset_at = official.weekly.reset_at;
+  return result;
+}
+
+export function statuslineOnlyState(official) {
+  return applyStatuslineState({
+    captured_at: official.captured_at, plan: null,
+    session_used_percent: null, session_reset_at: null,
+    weekly_used_percent: null, weekly_reset_at: null,
+    sonnet_weekly_used_percent: null, sonnet_weekly_reset_at: null,
+    extra_usage_enabled: null, extra_usage_percent: null,
+    extra_usage_used: null, extra_usage_limit: null, status: "ok",
+  }, official);
 }
 
 export async function fetchUsage({ claudeHome, endpoint }) {
