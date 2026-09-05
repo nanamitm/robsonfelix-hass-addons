@@ -123,6 +123,12 @@ export async function fetchUsage({ claudeHome, endpoint }) {
   if (response.status === 401 || response.status === 403) {
     throw new UsageError(`Claude token rejected (HTTP ${response.status}) - use Claude Code once to refresh it`);
   }
+  if (response.status === 429) {
+    const error = new UsageError("usage request failed: HTTP 429");
+    error.status = 429;
+    error.retryAfter = response.headers.get("retry-after");
+    throw error;
+  }
   if (!response.ok) throw new UsageError(`usage request failed: HTTP ${response.status}`);
   try { return toState(await response.json(), plan); }
   catch (error) { throw new UsageError(`usage response could not be parsed: ${error.message}`); }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.8] - 2026-09-05
+
+- Persist exponential backoff and Retry-After deadlines after usage API HTTP 429 responses.
+- Keep usage sensors offline during cooldown when no fresh StatusLine data is available.
+- Add regression tests for cooldown persistence, recovery, and sensor availability.
+
 ## [1.3.7] - 2026-09-05
 
 - Persist the last usage API attempt and enforce the configured polling interval across restarts.
