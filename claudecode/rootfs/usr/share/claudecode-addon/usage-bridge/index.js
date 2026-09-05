@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import { MqttClient } from "./mqtt.js";
 import { discoveryMessages } from "./entities.js";
 import {
@@ -8,6 +9,7 @@ import {
 } from "./usage.js";
 
 const pollSeconds = Math.max(60, Number.parseInt(process.env.USAGE_POLL_SECONDS ?? "300", 10));
+const apiMinIntervalMs = pollSeconds * 1000;
 const baseTopic = process.env.MQTT_BASE_TOPIC || "claude/usage";
 const config = {
   host: process.env.MQTT_HOST, port: Number(process.env.MQTT_PORT) || 1883,
@@ -20,17 +22,39 @@ const config = {
   claudeVersion: process.env.CLAUDE_VERSION || undefined,
   stateTopic: `${baseTopic}/state`, availabilityTopic: `${baseTopic}/availability`,
 };
+const apiRequestStatePath = process.env.CLAUDE_USAGE_REQUEST_STATE
+  || `${config.claudeHome}/usage-api-last-request.json`;
 const client = new MqttClient({ host: config.host, port: config.port, ssl: config.ssl,
   username: config.username, password: config.password, clientId: "ha-claude-usage",
   keepAlive: 60, will: { topic: config.availabilityTopic, payload: "offline", retain: true } });
 let polling = false;
 let lastError = null;
+let rateLimitLogged = false;
 function availability(value) { client.publish(config.availabilityTopic, value, { retain: true }); }
+async function claimApiRequest() {
+  let lastRequest = 0;
+  try { lastRequest = Number(JSON.parse(await fs.readFile(apiRequestStatePath, "utf8")).requested_at); } catch { /* first request */ }
+  if (Number.isFinite(lastRequest) && Date.now() - lastRequest < apiMinIntervalMs) return false;
+  const temporaryPath = `${apiRequestStatePath}.tmp-${process.pid}`;
+  await fs.writeFile(temporaryPath, `${JSON.stringify({ requested_at: Date.now() })}\n`, { mode: 0o600 });
+  await fs.rename(temporaryPath, apiRequestStatePath);
+  return true;
+}
 async function poll() {
   if (polling) return;
   polling = true;
   try {
     const official = await readStatuslineState();
+    if (!(await claimApiRequest())) {
+      if (!rateLimitLogged) {
+        console.log(`[usage] API rate limited; next request no sooner than ${pollSeconds}s after the previous attempt`);
+        rateLimitLogged = true;
+      }
+      if (official) client.publish(config.stateTopic, JSON.stringify(statuslineOnlyState(official)), { retain: true });
+      availability("online");
+      return;
+    }
+    rateLimitLogged = false;
     const state = await fetchUsage({ claudeHome: config.claudeHome, endpoint: config.endpoint });
     client.publish(config.stateTopic, JSON.stringify(applyStatuslineState(state, official)), { retain: true });
     availability("online");

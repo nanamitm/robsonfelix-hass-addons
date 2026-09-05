@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.7] - 2026-09-05
+
+- Persist the last usage API attempt and enforce the configured polling interval across restarts.
+
 ## [1.3.6] - 2026-09-05
 
 - Prevent usage bridge restarts when StatusLine reports only one rate-limit window.
