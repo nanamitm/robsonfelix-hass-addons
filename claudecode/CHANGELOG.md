@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.3.5
+
+- Remove obsolete `Glob(...)` permission entries that Claude Code warns about.
+- Honor the configured `working_directory`, with a safe `/homeassistant` fallback.
+
+## 1.3.4
+
+- Bump release to ensure Supervisor refreshes the startup quoting fix.
+
+## [1.3.3] - 2026-09-05
+
+### Fixed
+- Correctly escape the statusLine setup command in the add-on startup shell.
+
+## [1.3.2] - 2026-09-05
+
+### Added
+- Capture Claude Code's official `rate_limits` from the statusLine when
+  available, prefer it over the OAuth usage API, and keep reset sensors online
+  during short API authentication failures.
+
 ## [1.3.1] - 2026-09-04
 
 ### Changed
@@ -18,18 +39,6 @@
 - Normalize reset timestamps to the nearest minute so Anthropic's one-second API jitter does not create spurious Home Assistant state changes.
 
 All notable changes to this project will be documented in this file.
-
-## [1.3.3] - 2026-09-05
-
-### Fixed
-- Correctly escape the statusLine setup command in the add-on startup shell.
-
-## [1.3.2] - 2026-09-05
-
-### Added
-- Capture Claude Code's official `rate_limits` from the statusLine when
-  available, prefer it over the OAuth usage API, and keep reset sensors online
-  during short API authentication failures.
 
 ## [1.2.65] - 2026-07-08
 
@@ -515,11 +524,3 @@ All notable changes to this project will be documented in this file.
 - Read-write access to Home Assistant configuration
 - Multi-architecture support (amd64, aarch64, armv7, armhf, i386)
 - Ingress support for seamless sidebar integration
-## 1.3.4
-
-- Bump release to ensure Supervisor refreshes the startup quoting fix.
-
-## 1.3.5
-
-- Remove obsolete `Glob(...)` permission entries that Claude Code warns about.
-- Honor the configured `working_directory`, with a safe `/homeassistant` fallback.
