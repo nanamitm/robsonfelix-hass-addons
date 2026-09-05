@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.9] - 2026-09-05
+
+- Move startup commands into a shell script to prevent Dockerfile quoting from breaking startup.
+- Validate the Claude Code entrypoint in CI and during image builds.
+
 ## [1.3.8] - 2026-09-05
 
 - Persist exponential backoff and Retry-After deadlines after usage API HTTP 429 responses.

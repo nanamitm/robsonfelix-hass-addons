@@ -65,4 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Check syntax
-        run: bash -n codex/rootfs/usr/bin/codex-addon-start.sh
+        run: |
+          bash -n codex/rootfs/usr/bin/codex-addon-start.sh
+          bash -n claudecode/rootfs/usr/bin/claudecode-addon-start.sh
+          python3 claudecode/tests/startup_test.py
