@@ -280,3 +280,20 @@ After changing configuration:
 
 - [GitHub Issues](https://github.com/robsonfelix/robsonfelix-hass-addons/issues)
 - [Home Assistant Community](https://community.home-assistant.io/)
+
+### Usage API request scheduling
+
+The configured polling interval is a minimum. After six consecutive unchanged
+usage responses, the bridge polls every 600 seconds (or the configured interval,
+if longer). A change restores the configured interval. Idle scheduling survives
+restarts. Local StatusLine checks and diagnostic publication run every 30 seconds;
+these checks do not call the usage API.
+
+HTTP 429 starts a cooldown of at least one hour, doubling on repeated 429s up to
+24 hours. A longer Retry-After value (seconds or HTTP date) always takes priority.
+Restarting or reducing the polling option does not shorten a saved cooldown.
+
+Diagnostic sensors expose API Status (ready, waiting, rate_limited, error),
+Next API Request Allowed (the earliest permitted request time, not a guaranteed
+execution time), and API Polling Interval in seconds. They remain visible when
+usage values are unavailable and expire if the bridge stops reporting.

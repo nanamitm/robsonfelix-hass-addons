@@ -19,7 +19,7 @@ export function discoveryMessages(config) {
   const device = { identifiers: [config.deviceId], name: config.deviceName,
     manufacturer: "Anthropic", model: "Claude Code",
     ...(config.claudeVersion ? { sw_version: config.claudeVersion } : {}) };
-  return SENSORS.map(([key, id, name, unit, icon, stateClass, deviceClass]) => ({
+  const messages = SENSORS.map(([key, id, name, unit, icon, stateClass, deviceClass]) => ({
     topic: `${config.discoveryPrefix}/sensor/${config.deviceId}/${id}/config`,
     payload: JSON.stringify({ name, has_entity_name: true,
       unique_id: `${config.deviceId}_${id}`, object_id: `${config.deviceId}_${id}`,
@@ -32,4 +32,19 @@ export function discoveryMessages(config) {
       ...(id === "status" ? { json_attributes_topic: config.stateTopic, entity_category: "diagnostic" } : {}),
       ...(id === "plan" ? { entity_category: "diagnostic" } : {}), device }),
   }));
+  for (const [key, name, deviceClass, unit] of [
+    ["api_status", "API Status"],
+    ["next_request_at", "Next API Request Allowed", "timestamp"],
+    ["polling_interval", "API Polling Interval", null, "s"],
+  ]) {
+    messages.push({
+      topic: `${config.discoveryPrefix}/sensor/${config.deviceId}/${key}/config`,
+      payload: JSON.stringify({ name, unique_id: `${config.deviceId}_${key}`,
+        object_id: `${config.deviceId}_${key}`, state_topic: `${config.stateTopic.replace(/\/state$/, "")}/diagnostics`,
+        value_template: template(key), entity_category: "diagnostic", expire_after: 120,
+        ...(deviceClass ? { device_class: deviceClass } : {}),
+        ...(unit ? { unit_of_measurement: unit } : {}), device }),
+    });
+  }
+  return messages;
 }

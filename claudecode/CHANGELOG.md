@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.10] - 2026-09-05
+
+- Wait at least one hour after HTTP 429; preserve longer Retry-After deadlines and exponential backoff across restarts.
+- Extend unchanged usage polling to at least 600 seconds after six unchanged responses, without shortening configured intervals or cooldowns.
+- Expose API status, next allowed request time, and polling interval as independent MQTT diagnostic sensors.
+
 ## [1.3.9] - 2026-09-05
 
 - Move startup commands into a shell script to prevent Dockerfile quoting from breaking startup.
