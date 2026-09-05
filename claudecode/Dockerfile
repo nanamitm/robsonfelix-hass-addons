@@ -203,6 +203,7 @@ CMD ["/bin/bash", "-c", "\
   if [ ! -L /root/.claude.json ]; then touch $PERSIST_DIR/.claude.json; rm -f /root/.claude.json; ln -s $PERSIST_DIR/.claude.json /root/.claude.json; fi && \
   FONT_SIZE=$(jq -r '.terminal_font_size // 14' /data/options.json) && \
   THEME=$(jq -r '.terminal_theme // \"dark\"' /data/options.json) && \
+  WORKING_DIR=$(jq -r '.working_directory // \"/homeassistant\"' /data/options.json) && \
   SESSION_PERSIST=$(jq -r 'if .session_persistence == null then true else .session_persistence end' /data/options.json) && \
   ENABLE_MCP=$(jq -r 'if .enable_mcp == null then true else .enable_mcp end' /data/options.json) && \
   ENABLE_PLAYWRIGHT=$(jq -r '.enable_playwright_mcp // false' /data/options.json) && \
@@ -223,6 +224,8 @@ CMD ["/bin/bash", "-c", "\
   USAGE_POLL=$(jq -r '.usage_poll_seconds // 300' /data/options.json) && \
   SETTINGS_FILE=/root/.claude/settings.json && \
   [ -f \"$SETTINGS_FILE\" ] || echo '{}' > \"$SETTINGS_FILE\" && \
+  jq 'if .permissions.allow then .permissions.allow |= map(select((type != \"string\") or (startswith(\"Glob(\") | not))) else . end' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
+  mv /tmp/settings.tmp \"$SETTINGS_FILE\" && \
   if ! jq -e '.statusLine' \"$SETTINGS_FILE\" > /dev/null 2>&1; then \
     jq '.statusLine = {\"type\":\"command\",\"command\":\"node /usr/share/claudecode-addon/usage-bridge/statusline.js\"}' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
     mv /tmp/settings.tmp \"$SETTINGS_FILE\" && \
@@ -268,7 +271,7 @@ CMD ["/bin/bash", "-c", "\
   if [ \"$CLAUDE_OK\" = \"true\" ] && [ \"$ENABLE_MCP\" = \"true\" ]; then \
     timeout 30 claude mcp add-json homeassistant '{\"command\":\"hass-mcp\"}' -s user && \
     SETTINGS_FILE=/root/.claude/settings.json && \
-    ALLOWED_TOOLS='[\"mcp__homeassistant__get_version\",\"mcp__homeassistant__get_entity\",\"mcp__homeassistant__list_entities\",\"mcp__homeassistant__search_entities_tool\",\"mcp__homeassistant__domain_summary_tool\",\"mcp__homeassistant__list_automations\",\"mcp__homeassistant__get_history\",\"mcp__homeassistant__get_error_log\",\"Read(/homeassistant/**)\",\"Read(/config/**)\",\"Read(/share/**)\",\"Read(/media/**)\",\"Glob(/homeassistant/**)\",\"Glob(/config/**)\",\"Grep(/homeassistant/**)\",\"Grep(/config/**)\"]' && \
+    ALLOWED_TOOLS='[\"mcp__homeassistant__get_version\",\"mcp__homeassistant__get_entity\",\"mcp__homeassistant__list_entities\",\"mcp__homeassistant__search_entities_tool\",\"mcp__homeassistant__domain_summary_tool\",\"mcp__homeassistant__list_automations\",\"mcp__homeassistant__get_history\",\"mcp__homeassistant__get_error_log\",\"Read(/homeassistant/**)\",\"Read(/config/**)\",\"Read(/share/**)\",\"Read(/media/**)\",\"Grep(/homeassistant/**)\",\"Grep(/config/**)\"]' && \
     jq --argjson tools \"$ALLOWED_TOOLS\" '.permissions.allow = ($tools + (.permissions.allow // []) | unique)' $SETTINGS_FILE > /tmp/settings.tmp && mv /tmp/settings.tmp $SETTINGS_FILE && \
     echo '[INFO] MCP configured with Home Assistant integration'; \
     echo '[INFO] Pre-authorized read-only MCP tools'; \
@@ -318,7 +321,12 @@ CMD ["/bin/bash", "-c", "\
       node /usr/share/claudecode-addon/usage-bridge/index.js || true; sleep 10; \
     done) & \
   fi && \
-  cd /homeassistant && \
+  if [ -d \"$WORKING_DIR\" ]; then \
+    cd \"$WORKING_DIR\"; \
+  else \
+    echo \"[WARN] working_directory does not exist: $WORKING_DIR; falling back to /homeassistant\"; \
+    cd /homeassistant; \
+  fi && \
   exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
     -t fontSize=$FONT_SIZE \
     -t fontFamily=Monaco,Consolas,monospace \

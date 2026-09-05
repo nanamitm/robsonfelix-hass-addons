@@ -518,3 +518,8 @@ All notable changes to this project will be documented in this file.
 ## 1.3.4
 
 - Bump release to ensure Supervisor refreshes the startup quoting fix.
+
+## 1.3.5
+
+- Remove obsolete `Glob(...)` permission entries that Claude Code warns about.
+- Honor the configured `working_directory`, with a safe `/homeassistant` fallback.
