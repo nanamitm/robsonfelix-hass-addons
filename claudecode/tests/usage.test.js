@@ -41,3 +41,13 @@ test("statusline captures official weekly limits and overrides API estimates", a
   assert.equal(official.weekly.reset_at, "2026-09-10T19:00:00.000Z");
   assert.equal(applyStatuslineState({ weekly_used_percent: 7 }, official).weekly_used_percent, 34);
 });
+
+test("statusline fallback tolerates a missing rate-limit window", () => {
+  const state = applyStatuslineState(
+    { session_used_percent: null, weekly_used_percent: null },
+    { captured_at: "2026-09-05T09:00:00.000Z", session: null,
+      weekly: { used_percent: 28, reset_at: null } },
+  );
+  assert.equal(state.session_used_percent, null);
+  assert.equal(state.weekly_used_percent, 28);
+});

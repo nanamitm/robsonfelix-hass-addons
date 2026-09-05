@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.6] - 2026-09-05
+
+- Prevent usage bridge restarts when StatusLine reports only one rate-limit window.
+
 ## [1.3.5] - 2026-09-05
 
 - Remove obsolete `Glob(...)` permission entries that Claude Code warns about.

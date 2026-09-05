@@ -84,9 +84,13 @@ export async function readStatuslineState(
 export function applyStatuslineState(state, official) {
   if (!official) return state;
   const result = { ...state, status_source: "statusline" };
-  if (official.session?.used_percent !== null) result.session_used_percent = official.session.used_percent;
+  if (official.session?.used_percent !== null && official.session?.used_percent !== undefined) {
+    result.session_used_percent = official.session.used_percent;
+  }
   if (official.session?.reset_at) result.session_reset_at = official.session.reset_at;
-  if (official.weekly?.used_percent !== null) result.weekly_used_percent = official.weekly.used_percent;
+  if (official.weekly?.used_percent !== null && official.weekly?.used_percent !== undefined) {
+    result.weekly_used_percent = official.weekly.used_percent;
+  }
   if (official.weekly?.reset_at) result.weekly_reset_at = official.weekly.reset_at;
   return result;
 }
