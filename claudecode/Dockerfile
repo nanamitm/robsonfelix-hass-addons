@@ -224,7 +224,7 @@ CMD ["/bin/bash", "-c", "\
   SETTINGS_FILE=/root/.claude/settings.json && \
   [ -f \"$SETTINGS_FILE\" ] || echo '{}' > \"$SETTINGS_FILE\" && \
   if ! jq -e '.statusLine' \"$SETTINGS_FILE\" > /dev/null 2>&1; then \
-    jq '.statusLine = {"type":"command","command":"node /usr/share/claudecode-addon/usage-bridge/statusline.js"}' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
+    jq '.statusLine = {\"type\":\"command\",\"command\":\"node /usr/share/claudecode-addon/usage-bridge/statusline.js\"}' \"$SETTINGS_FILE\" > /tmp/settings.tmp && \
     mv /tmp/settings.tmp \"$SETTINGS_FILE\" && \
     echo '[INFO] Claude usage statusLine capture enabled'; \
   else \
