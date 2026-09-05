@@ -515,3 +515,6 @@ All notable changes to this project will be documented in this file.
 - Read-write access to Home Assistant configuration
 - Multi-architecture support (amd64, aarch64, armv7, armhf, i386)
 - Ingress support for seamless sidebar integration
+## 1.3.4
+
+- Bump release to ensure Supervisor refreshes the startup quoting fix.
