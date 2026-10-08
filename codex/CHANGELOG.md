@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.7] - 2026-10-08
+
+### Fixed
+- `codex` failed to start with `this CLI has no complete local package` on
+  Codex 0.161.0, whose TUI starts a background app-server daemon that only runs
+  from a complete release package. The add-on now installs the official
+  `codex-package` tarball into `/opt/codex/<version>` and links
+  `/usr/local/bin/codex` to it, instead of the bare binary and helpers. The
+  bundled bubblewrap, code-mode host and ripgrep come from the same package
+
 ## [0.2.6] - 2026-09-04
 
 ### Changed
