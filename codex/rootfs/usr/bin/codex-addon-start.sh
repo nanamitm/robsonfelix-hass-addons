@@ -65,6 +65,18 @@ if [ "$(readlink "$CODEX_HOME/packages" 2>/dev/null)" != "$PACKAGES_DIR" ]; then
     ln -s "$PACKAGES_DIR" "$CODEX_HOME/packages"
 fi
 
+# Codex only installs a missing daemon package when no daemon has left state
+# behind; otherwise it fails with "daemon executable not found" and asks for a
+# repair. The package is gone whenever /data is fresh - the migration above, a
+# reinstall, or a restored backup, which excludes it - while this state, kept
+# in $CODEX_HOME, survives. No daemon outlives the container, so it is stale.
+if [ ! -e "$PACKAGES_DIR/app-server-daemon/current" ]; then
+    rm -f "$CODEX_HOME"/app-server-daemon/daemon.pid \
+        "$CODEX_HOME"/app-server-daemon/daemon.stderr.log \
+        "$CODEX_HOME"/app-server-daemon/daemon-updater.pid \
+        "$CODEX_HOME"/app-server-daemon/daemon-updater.stderr.log
+fi
+
 if [ "$AUTO_UPDATE" = "true" ]; then
     # install-codex.sh only replaces the CLI once the new one has proved it
     # runs, so this really does leave a working install behind.

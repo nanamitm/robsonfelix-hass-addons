@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.11] - 2026-10-08
+
+### Fixed
+- After 0.2.10 moved Codex's package copies to `/data`, `codex` failed with
+  `daemon executable not found`: Codex refuses to reinstall a missing daemon
+  package while the old daemon's pid and log files remain. The start script now
+  clears that stale state whenever the package is missing, which also covers
+  reinstalls and restored backups
+
 ## [0.2.10] - 2026-10-08
 
 ### Fixed
