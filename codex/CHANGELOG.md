@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.8] - 2026-10-08
+
+### Fixed
+- `codex` failed with `Permission denied` after 0.2.7: the AppArmor profile did
+  not allow executing anything under `/opt/codex`, where the Codex package is
+  now installed. The profile now grants it read, execute, mmap and (for
+  `auto_update_codex`) write access
+
 ## [0.2.7] - 2026-10-08
 
 ### Fixed

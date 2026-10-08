@@ -42,12 +42,19 @@ profile codex flags=(attach_disconnected,mediate_deleted) {
   /usr/bin/** ixr,
   /usr/lib/** ixmr,
   /usr/local/** ixr,
-  # The Codex binary and its bubblewrap helper live here, and install-codex.sh
-  # replaces them in place when auto_update_codex is on; without w that fails
-  # with EACCES on rename even as root. npm's global prefix needs the same.
+  # The codex link lives here, and install-codex.sh replaces it by rename when
+  # auto_update_codex is on; without w that fails with EACCES even as root.
+  # npm's global prefix needs the same.
   /usr/local/bin/** rwixk,
   /usr/local/lib/node_modules/** rwixk,
   /usr/libexec/** ixr,
+
+  # The Codex release package that /usr/local/bin/codex links into: the CLI,
+  # bubblewrap, the code-mode host, ripgrep, and the voice host with its
+  # bundled shared libraries (hence m). install-codex.sh unpacks new versions
+  # beside the current one and removes old ones when auto_update_codex is on.
+  /opt/codex/ rw,
+  /opt/codex/** rwixmk,
 
   # Add-on data
   /data/** rwk,
