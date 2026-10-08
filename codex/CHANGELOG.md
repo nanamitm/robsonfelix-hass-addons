@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.9] - 2026-10-08
+
+### Fixed
+- `codex` failed with `failed to read start time for pid-managed app server`:
+  Codex's background app-server daemon reads its process start time with
+  `ps -p PID -o stat= -o lstart=`, which BusyBox `ps` rejects. The image now
+  installs `procps-ng`, and the AppArmor profile lets it list `/proc`
+
 ## [0.2.8] - 2026-10-08
 
 ### Fixed

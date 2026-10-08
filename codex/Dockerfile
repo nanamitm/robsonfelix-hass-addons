@@ -17,7 +17,9 @@ ENV \
 # sessions and user config survive add-on restarts, rebuilds and reinstalls.
 ENV CODEX_HOME=/homeassistant/.codex
 
-# Install system dependencies (ttyd installed separately as static binary)
+# Install system dependencies (ttyd installed separately as static binary).
+# procps-ng replaces BusyBox ps: Codex's app-server daemon runs
+# `ps -p PID -o stat= -o lstart=`, which BusyBox ps does not support.
 RUN apk add --no-cache \
     bash \
     curl \
@@ -41,6 +43,7 @@ RUN apk add --no-cache \
     openssl \
     ripgrep \
     p7zip \
+    procps-ng \
     socat \
     docker-cli \
     && update-ca-certificates
