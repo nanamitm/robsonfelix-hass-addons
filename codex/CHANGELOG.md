@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.10] - 2026-10-08
+
+### Fixed
+- Codex's background app-server daemon copies its ~450 MB release package
+  into `$CODEX_HOME/packages`, which put it in every Home Assistant backup.
+  `/homeassistant/.codex/packages` is now a link to `/data/codex-packages`,
+  which is also excluded from the add-on's own backups. An existing
+  `packages` directory is removed on start; Codex recreates what it needs
+
 ## [0.2.9] - 2026-10-08
 
 ### Fixed

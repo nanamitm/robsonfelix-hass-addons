@@ -1,6 +1,6 @@
 name: Codex
 description: Run OpenAI Codex CLI inside Home Assistant to create automations, debug issues, and manage your smart home configuration
-version: "0.2.9"
+version: "0.2.10"
 slug: codex
 url: https://github.com/nanamitm/robsonfelix-hass-addons
 # Codex publishes Linux binaries for x86_64 and aarch64 musl only.
@@ -22,6 +22,10 @@ hassio_api: true
 hassio_role: manager
 docker_api: true
 full_access: true
+# Codex's copies of its own release package, linked from
+# $CODEX_HOME/packages by the start script; Codex recreates them on demand.
+backup_exclude:
+  - codex-packages
 map:
   - homeassistant_config:rw
   - ssl:ro

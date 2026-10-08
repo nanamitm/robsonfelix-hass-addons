@@ -51,6 +51,20 @@ fi
 
 mkdir -p "$CODEX_HOME" "$SYSTEM_CONFIG_DIR"
 
+# Codex copies its whole release package (~450 MB per version) into
+# $CODEX_HOME/packages to run its background app-server daemon from. Keep that
+# out of the HA config directory, which is part of every backup: point it at
+# /data, where config.yaml's backup_exclude drops it from add-on backups too.
+# Backups store the link itself, not what it points to. A real directory left
+# by an earlier version only holds copies Codex recreates on demand, and no
+# daemon can be running from it this early in a fresh container.
+PACKAGES_DIR=/data/codex-packages
+mkdir -p "$PACKAGES_DIR"
+if [ "$(readlink "$CODEX_HOME/packages" 2>/dev/null)" != "$PACKAGES_DIR" ]; then
+    rm -rf "$CODEX_HOME/packages"
+    ln -s "$PACKAGES_DIR" "$CODEX_HOME/packages"
+fi
+
 if [ "$AUTO_UPDATE" = "true" ]; then
     # install-codex.sh only replaces the CLI once the new one has proved it
     # runs, so this really does leave a working install behind.
