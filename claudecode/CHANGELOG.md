@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.11] - 2026-11-02
+
+### Added
+- Install `poppler-utils`, so Claude Code's `Read` tool can open PDF files.
+
+### Fixed
+- `terminal_theme: light` had no effect: ttyd needs `theme` as a JSON object, so the built-in dark theme was always used.
+- Run the AVX check only on x86, so ARM hosts no longer get a false warning on every boot.
+- `auto_update_claude` now installs only when the registry has a different version, is skipped on CPUs without AVX, and rolls back to the version that was running rather than the build-time one.
+- The startup log and the usage bridge report the installed Claude Code version instead of the build-time one.
+
 ## [1.3.10] - 2026-09-05
 
 - Wait at least one hour after HTTP 429; preserve longer Retry-After deadlines and exponential backoff across restarts.

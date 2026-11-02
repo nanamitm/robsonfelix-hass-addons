@@ -249,9 +249,9 @@ else
 fi
 
 if [ "$THEME" = "dark" ]; then
-    COLORS='background=#1e1e2e,foreground=#cdd6f4,cursor=#f5e0dc'
+    COLORS='{"background":"#1e1e2e","foreground":"#cdd6f4","cursor":"#f5e0dc"}'
 else
-    COLORS='background=#eff1f5,foreground=#4c4f69,cursor=#dc8a78'
+    COLORS='{"background":"#eff1f5","foreground":"#4c4f69","cursor":"#dc8a78"}'
 fi
 
 if [ "$SESSION_PERSIST" = "true" ]; then

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.12] - 2026-11-02
+
+### Fixed
+- `terminal_theme: light` had no effect: ttyd needs `theme` as a JSON object,
+  so the built-in dark theme was always used
+
 ## [0.2.11] - 2026-10-08
 
 ### Fixed
