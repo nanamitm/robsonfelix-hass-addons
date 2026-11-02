@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.14] - 2026-11-02
+
+### Changed
+- Verify the ttyd binary against its release checksum, and fetch the web client
+  source through git so its content is checked against the pinned commit
+- Fail the build on an unsupported architecture instead of silently installing
+  the x86_64 ttyd
+
 ## [0.2.13] - 2026-11-02
 
 ### Added

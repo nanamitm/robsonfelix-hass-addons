@@ -4,19 +4,21 @@ ARG BUILD_FROM
 # predates OSC 52 clipboard support, so startup serves this build via --index.
 # Built with yarn so ttyd's lockfile is honored (npm resolves newer transitive
 # deps and fails type-checking). Everything is pinned - ttyd commit, corepack,
-# lockfile deps. COREPACK_INTEGRITY_KEYS=0 keeps the pinned corepack working
-# across npm signing-key rotations; integrity comes from the yarn.lock
-# checksums. Drop this stage and --index once a ttyd release newer than 1.7.7
-# ships.
+# lockfile deps. The source comes through git rather than a GitHub archive: git
+# verifies the content against the commit hash, and archives are generated on
+# demand, so a checksum of one can break without the source changing.
+# COREPACK_INTEGRITY_KEYS=0 keeps the pinned corepack working across npm
+# signing-key rotations; integrity comes from the yarn.lock checksums. Drop this
+# stage and --index once a ttyd release newer than 1.7.7 ships.
 #
 # Do NOT use FROM --platform=$BUILDPLATFORM here: that variable only exists
 # under BuildKit, and the Supervisor's classic builder fails to parse the line.
 FROM ${BUILD_FROM} AS ttyd-client
-RUN apk add --no-cache curl nodejs npm
+RUN apk add --no-cache git nodejs npm
 ARG TTYD_CLIENT_COMMIT=2922cb89f518bae4d0fcf4d757a7419638fc71fc
-RUN curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
-        "https://github.com/tsl0922/ttyd/archive/${TTYD_CLIENT_COMMIT}.tar.gz" \
-        | tar xz && mv "ttyd-${TTYD_CLIENT_COMMIT}" /ttyd
+RUN git init -q /ttyd && cd /ttyd && \
+    git fetch -q --depth 1 https://github.com/tsl0922/ttyd "${TTYD_CLIENT_COMMIT}" && \
+    git checkout -q FETCH_HEAD
 WORKDIR /ttyd/html
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     COREPACK_NPM_REGISTRY=https://registry.npmjs.org \
@@ -71,14 +73,13 @@ RUN apk add --no-cache \
 # Install ttyd static binary (avoids libwebsockets issues)
 ARG BUILD_ARCH
 RUN case "${BUILD_ARCH}" in \
-        amd64) TTYD_ARCH="x86_64" ;; \
-        aarch64) TTYD_ARCH="aarch64" ;; \
-        armv7|armhf) TTYD_ARCH="armhf" ;; \
-        i386) TTYD_ARCH="i686" ;; \
-        *) TTYD_ARCH="x86_64" ;; \
+        amd64) TTYD_ARCH="x86_64" TTYD_SHA256="8a217c968aba172e0dbf3f34447218dc015bc4d5e59bf51db2f2cd12b7be4f55" ;; \
+        aarch64) TTYD_ARCH="aarch64" TTYD_SHA256="b38acadd89d1d396a0f5649aa52c539edbad07f4bc7348b27b4f4b7219dd4165" ;; \
+        *) echo "Unsupported architecture: ${BUILD_ARCH}" >&2; exit 1 ;; \
     esac && \
     curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
         "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
+    echo "${TTYD_SHA256}  /usr/bin/ttyd" | sha256sum -c - && \
     chmod +x /usr/bin/ttyd
 COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 

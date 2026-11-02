@@ -1,0 +1,54 @@
+# The lint workflow never builds an image, so a broken Dockerfile would otherwise
+# first show up as a failed add-on update on a user's system. This only runs when
+# something that goes into an image changes, because a build takes minutes.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*/Dockerfile"
+      - "*/build.yaml"
+      - "*/install-*.sh"
+      - "*/rootfs/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "*/Dockerfile"
+      - "*/build.yaml"
+      - "*/install-*.sh"
+      - "*/rootfs/**"
+      - ".github/workflows/build.yml"
+
+jobs:
+  image:
+    name: ${{ matrix.addon }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        addon: [codex, claudecode]
+        arch: [amd64, aarch64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          # A native runner: Node's JIT is unreliable under QEMU emulation.
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    # The classic builder, because that is what the Supervisor uses: a Dockerfile
+    # that needs BuildKit would pass here and fail on every user's system.
+    env:
+      DOCKER_BUILDKIT: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build
+        run: |
+          base=$(sed -n "s/^  ${{ matrix.arch }}: //p" ${{ matrix.addon }}/build.yaml)
+          docker build \
+            --build-arg BUILD_FROM="$base" \
+            --build-arg BUILD_ARCH=${{ matrix.arch }} \
+            -t addon-test ${{ matrix.addon }}
+      - name: Check the image
+        run: |
+          docker run --rm --entrypoint /bin/bash addon-test -c \
+            'ttyd --version && test -s /usr/share/ttyd/index.html && tmux -f /root/.tmux.conf start-server'

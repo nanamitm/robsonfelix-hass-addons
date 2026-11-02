@@ -5,10 +5,10 @@ here so that Claude Code and Codex read the same file.
 
 ## Before Every Commit
 
-**IMPORTANT:** Update `codex/CHANGELOG.md` and bump `version` in
-`codex/config.yaml` before making any commit that changes the add-on. Home
-Assistant only offers an update when the version changes, so a fix without a
-bump never reaches an installed add-on. Follow the existing format:
+**IMPORTANT:** Update `CHANGELOG.md` and bump `version` in `config.yaml` of each
+add-on (`codex/`, `claudecode/`) that a commit changes. Home Assistant only
+offers an update when the version changes, so a fix without a bump never reaches
+an installed add-on. Follow the existing format:
 
 ```markdown
 ## [VERSION] - YYYY-MM-DD
@@ -22,7 +22,14 @@ bump never reaches an installed add-on. Follow the existing format:
 - `.github/workflows/lint.yml` - Runs on every push. `check_addon_config.py`
   enforces structure and blocks; the third-party add-on linter is advisory,
   because it errors on defaults this repo writes out on purpose
+- `.github/workflows/build.yml` - Builds both images on amd64 and aarch64 when
+  something that goes into an image changes, with the classic builder the
+  Supervisor uses
 - `repository.yaml` - Add-on repository metadata
+- `claudecode/` - Claude Code add-on, laid out like `codex/`. Its entrypoint is
+  `rootfs/usr/bin/claudecode-addon-start.sh`
+- Both add-ons have `tests/startup_test.py`, which runs the real entrypoint with
+  stubbed services. It needs Linux and `jq`
 - `codex/` - Codex add-on
   - `config.yaml` - Add-on configuration (bump version here)
   - `Dockerfile` - Container build instructions

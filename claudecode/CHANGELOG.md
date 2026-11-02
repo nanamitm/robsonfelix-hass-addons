@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.13] - 2026-11-02
+
+### Changed
+- Verify the ttyd binary against its release checksum, and fetch the web client source through git so its content is checked against the pinned commit.
+- Fail the build on an unsupported architecture instead of silently installing the x86_64 ttyd; remove the leftover `armv7`, `armhf` and `i386` branches.
+- Point the image's source label at this repository.
+
 ## [1.3.12] - 2026-11-02
 
 ### Added

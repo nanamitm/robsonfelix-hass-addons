@@ -69,3 +69,4 @@ jobs:
           bash -n codex/rootfs/usr/bin/codex-addon-start.sh
           bash -n claudecode/rootfs/usr/bin/claudecode-addon-start.sh
           python3 claudecode/tests/startup_test.py
+          python3 codex/tests/startup_test.py
