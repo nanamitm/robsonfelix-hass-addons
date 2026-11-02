@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.13] - 2026-11-02
+
+### Added
+- OSC 52 clipboard in the web terminal: ttyd now serves a newer web client built
+  from a pinned commit, and tmux forwards copies, so tmux copy-mode reaches the
+  browser clipboard over HTTPS or localhost
+- tmux passes OSC 8 hyperlinks through to the browser terminal
+
 ## [0.2.12] - 2026-11-02
 
 ### Fixed

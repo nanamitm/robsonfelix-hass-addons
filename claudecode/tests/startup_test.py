@@ -47,6 +47,7 @@ for enabled in (False, True):
         assert '`debug`' in (base / 'homeassistant/.claudecode/CLAUDE.md').read_text()
         assert ('tmux' if enabled else 'bash') in (base / 'args').read_text()
         args = (base / 'args').read_text().splitlines()
+        assert args[args.index('--index') + 1] == '/usr/share/ttyd/index.html'
         theme = next(arg for arg in args if arg.startswith('theme='))
         assert json.loads(theme.split('=', 1)[1])['background'] == '#1e1e2e'
         print(f'PASS: startup reaches ttyd with MCP/Playwright/remote-control={enabled}')

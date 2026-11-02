@@ -170,9 +170,12 @@ Since tmux captures mouse events, copy/paste works differently:
 
 | Action | How to do it |
 |--------|--------------|
+| **Copy (tmux copy-mode)** | Scroll up (enters copy-mode), select, then copy — lands directly on your clipboard¹ |
 | **Copy** | Hold `Ctrl+Shift` while selecting text with mouse |
 | **Paste** | `Shift+Insert` or middle-click |
 | **Alternative paste** | `Ctrl+Shift+V` (browser dependent) |
+
+¹ OSC 52 needs **HTTPS or localhost** — on plain HTTP, use the `Ctrl+Shift` gesture instead.
 
 **Note**: Regular right-click paste and simple mouse selection won't work because tmux intercepts these events for scrolling.
 
@@ -180,12 +183,11 @@ Since tmux captures mouse events, copy/paste works differently:
 
 The authentication URL can be long and may wrap across multiple lines. To handle this:
 
-1. **Zoom out** your browser (`Ctrl + -` or `Cmd + -`) until the URL fits on a single line
-2. **Click the link** — it should open in a new tab
-3. Complete authentication in the browser and **copy the auth code**
-4. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
+1. **Click any row of the link** — the complete URL opens in a new tab after the terminal's confirmation dialog, on plain HTTP too
+2. Complete authentication in the browser and **copy the auth code**
+3. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+Over **HTTPS** (or localhost), the CLI's **press `c` to copy** hint also works. Don't drag-select the URL: its rows are separate lines and copy with line breaks. If you need it as text, **zoom out** (`Ctrl + -` or `Cmd + -`) until it fits on one line.
 
 ### Scrolling and Session Persistence Trade-offs
 

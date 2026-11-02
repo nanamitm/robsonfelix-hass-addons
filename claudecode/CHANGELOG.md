@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.12] - 2026-11-02
+
+### Added
+- OSC 52 clipboard in the web terminal: ttyd now serves a newer web client built from a pinned commit, and tmux forwards copies, so tmux copy-mode and the CLI's "press `c` to copy" reach the browser clipboard over HTTPS or localhost.
+- tmux passes OSC 8 hyperlinks through, so clicking any row of the wrapped `/login` URL opens the complete link, on plain HTTP too.
+
 ## [1.3.11] - 2026-11-02
 
 ### Added

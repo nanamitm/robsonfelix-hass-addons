@@ -59,6 +59,17 @@ Credentials land in `/homeassistant/.codex/auth.json` and survive add-on
 restarts, rebuilds and reinstalls. Treat that file like a password - it is part
 of your Home Assistant backups.
 
+## Copy and Paste
+
+tmux captures mouse events, so copy and paste work differently with
+`session_persistence` on:
+
+| Action | How to do it |
+|--------|--------------|
+| **Copy (tmux copy-mode)** | Scroll up (enters copy-mode), select, then copy - lands directly on your clipboard over **HTTPS or localhost** |
+| **Copy** | Hold `Ctrl+Shift` while selecting text with mouse; this is the way on plain HTTP |
+| **Paste** | `Shift+Insert` or middle-click |
+
 ## Configuration
 
 | Where | What it holds |

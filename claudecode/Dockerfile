@@ -1,4 +1,29 @@
 ARG BUILD_FROM
+
+# Build a current ttyd web client: the one embedded in the ttyd 1.7.7 binary
+# predates OSC 52 clipboard support, so startup serves this build via --index.
+# Built with yarn so ttyd's lockfile is honored (npm resolves newer transitive
+# deps and fails type-checking). Everything is pinned - ttyd commit, corepack,
+# lockfile deps. COREPACK_INTEGRITY_KEYS=0 keeps the pinned corepack working
+# across npm signing-key rotations; integrity comes from the yarn.lock
+# checksums. Drop this stage and --index once a ttyd release newer than 1.7.7
+# ships.
+#
+# Do NOT use FROM --platform=$BUILDPLATFORM here: that variable only exists
+# under BuildKit, and the Supervisor's classic builder fails to parse the line.
+FROM ${BUILD_FROM} AS ttyd-client
+RUN apk add --no-cache curl nodejs npm
+ARG TTYD_CLIENT_COMMIT=2922cb89f518bae4d0fcf4d757a7419638fc71fc
+RUN curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+        "https://github.com/tsl0922/ttyd/archive/${TTYD_CLIENT_COMMIT}.tar.gz" \
+        | tar xz && mv "ttyd-${TTYD_CLIENT_COMMIT}" /ttyd
+WORKDIR /ttyd/html
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    COREPACK_NPM_REGISTRY=https://registry.npmjs.org \
+    COREPACK_INTEGRITY_KEYS=0
+RUN npm install -g corepack@0.35.0 && corepack enable && \
+    yarn install --immutable && yarn run inline
+
 FROM ${BUILD_FROM}
 
 # Labels
@@ -55,6 +80,7 @@ RUN case "${BUILD_ARCH}" in \
     curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
         "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
     chmod +x /usr/bin/ttyd
+COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 
 # Install Claude Code.
 # 2.1.113 replaced the JS entrypoint with a Bun-compiled native binary, whose
