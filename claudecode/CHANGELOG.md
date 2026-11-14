@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.0] - 2026-11-14
+
+Ported from upstream (robsonfelix/robsonfelix-hass-addons 1.2.66-1.2.76).
+
+### Added
+- Headless runs from Home Assistant automations through `hassio.addon_stdin`: one task at a time, `{"abort": true}` to kill the active run, and `claudecode_runner_ready` / `claudecode_run_started` / `claudecode_run_finished` / `claudecode_run_rejected` events. New options `default_task_model`, `default_task_allowed_tools` and `task_max_runtime_minutes`.
+- `remote_control_server` starts `claude remote-control` in a background tmux session (`tmux attach -t rc`) when the add-on boots, with `remote_control_permission_mode` for its sessions. Requires `enable_remote_control`.
+- `auto_launch_claude` (`off` / `new` / `continue`) starts Claude Code when the terminal opens and drops to a shell when it exits. With Remote Control on, the `c` and `cc` aliases and the auto-launch pass `--remote-control`.
+- `extra_npm_packages` installs npm packages (such as custom MCP servers) at every start into `/homeassistant/.claudecode/npm-global`, which survives rebuilds and is on `PATH`.
+- `claude-login-url` saves the OAuth login URL from the tmux session to `/homeassistant/claude-login-url.txt`, for when the link cannot be clicked.
+- `/homeassistant/.claudecode/CLAUDE.user.md` holds your own instructions: the add-on creates it empty, never changes it, and the regenerated `CLAUDE.md` imports it.
+
+### Changed
+- The add-on's `CLAUDE.md` ships as a static file instead of being written by the startup script.
+- `@playwright/mcp` is installed into `/opt/playwright-mcp` instead of the npx cache, and the npm cache is no longer baked into the image.
+
+### Fixed
+- The Playwright Browser hostname is resolved each time the MCP server starts, from the add-on slug. It was looked up once at boot from a field the Supervisor's add-on list does not return, so it always fell back to `playwright-browser`, and a browser add-on installed later was never found.
+
 ## [1.3.13] - 2026-11-02
 
 ### Changed
