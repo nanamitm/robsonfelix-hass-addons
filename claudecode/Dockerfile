@@ -90,8 +90,11 @@ COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 # SIGILL). Fix that at the hypervisor (Proxmox CPU type "host"), not here.
 # No version is hardcoded: take latest when it runs, otherwise the newest
 # release that passes a smoke test, so the add-on still builds on such hosts.
+# The package pulls a ~240MB platform-native binary via optional deps, so clean
+# the npm cache and temp dirs in the SAME layer - otherwise ~100MB+ of cache
+# gets baked into the image.
 COPY install-claude.sh /usr/local/bin/install-claude.sh
-RUN chmod +x /usr/local/bin/install-claude.sh && /usr/local/bin/install-claude.sh
+RUN chmod +x /usr/local/bin/install-claude.sh     && /usr/local/bin/install-claude.sh     && npm cache clean --force     && rm -rf /root/.npm /tmp/*
 
 # Install hass-mcp for Home Assistant integration and pymodbus for Modbus operations
 RUN pip3 install --no-cache-dir --break-system-packages hass-mcp pymodbus pyserial
@@ -112,9 +115,13 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps \
     && apk add --no-cache libmodbus
 
-# Pre-cache Playwright MCP server (npx cache avoids /usr/local/bin/mcp conflict with hass-mcp)
-ENV NPM_CONFIG_CACHE=/root/.npm
-RUN npx @playwright/mcp --version || true
+# Install @playwright/mcp into /opt to avoid colliding with hass-mcp's
+# /usr/local/bin/mcp (both packages would otherwise install a binary named
+# `mcp` at the same path). Then symlink the actual playwright-mcp binary
+# (different name, no collision) into /usr/local/bin so it lives in PATH and
+# in a conventional location - Claude Code's `auto` permission classifier
+# treats /opt as unusual.
+RUN npm install -g --prefix=/opt/playwright-mcp @playwright/mcp &&     ln -s /opt/playwright-mcp/bin/playwright-mcp /usr/local/bin/playwright-mcp &&     npm cache clean --force &&     rm -rf /root/.npm /tmp/*
 
 # Install Home Assistant CLI (ha command)
 # Pinned and retried: a transient DNS failure used to abort the whole build
@@ -145,13 +152,25 @@ RUN mkdir -p \
 COPY rootfs/root/.tmux.conf /root/.tmux.conf
 COPY rootfs/root/.bashrc /root/.bashrc
 COPY rootfs/usr/share/claudecode-addon/usage-bridge /usr/share/claudecode-addon/usage-bridge
+# Add-on-managed CLAUDE.md, copied to the persistent dir at every start
+COPY rootfs/usr/share/claudecode-addon/CLAUDE.addon.md /usr/share/claudecode-addon/CLAUDE.addon.md
 RUN for f in /usr/share/claudecode-addon/usage-bridge/*.js; do node --check "$f"; done
+
+# Helpers, set executable here because git on Windows checkouts may drop the bit:
+# - claude-auto-launch: runs claude with the startup flags, then a login shell
+# - claude-login-url: saves the OAuth login URL from the tmux session to a file
+# - playwright-mcp-launch: resolves the Playwright Browser hostname each time
+#   the MCP server starts, so a browser add-on installed later is still found
+# - stdin-runner.sh: headless runs triggered by hassio.addon_stdin
+COPY rootfs/usr/local/bin/claude-auto-launch rootfs/usr/local/bin/claude-login-url      rootfs/usr/local/bin/playwright-mcp-launch rootfs/usr/local/bin/stdin-runner.sh      /usr/local/bin/
+RUN chmod +x /usr/local/bin/claude-auto-launch /usr/local/bin/claude-login-url         /usr/local/bin/playwright-mcp-launch /usr/local/bin/stdin-runner.sh &&     for f in claude-auto-launch claude-login-url playwright-mcp-launch stdin-runner.sh; do         bash -n "/usr/local/bin/$f" || exit 1;     done
 
 # Ensure .bashrc is sourced for login shells too
 RUN echo 'source ~/.bashrc' > /root/.profile
 
-# Set up PATH
-ENV PATH="/root/.local/bin:${PATH}"
+# Set up PATH. The extra_npm_packages install dir is on the persistent HA
+# volume so user-installed MCP servers survive add-on rebuilds.
+ENV PATH="/root/.local/bin:/homeassistant/.claudecode/npm-global/bin:${PATH}"
 
 # Set working directory
 WORKDIR /homeassistant

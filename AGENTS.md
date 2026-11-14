@@ -27,7 +27,15 @@ an installed add-on. Follow the existing format:
   Supervisor uses
 - `repository.yaml` - Add-on repository metadata
 - `claudecode/` - Claude Code add-on, laid out like `codex/`. Its entrypoint is
-  `rootfs/usr/bin/claudecode-addon-start.sh`
+  `rootfs/usr/bin/claudecode-addon-start.sh`. Helpers it starts or offers live
+  in `rootfs/usr/local/bin/` (`stdin-runner.sh` for headless runs from
+  `hassio.addon_stdin`, `claude-auto-launch`, `claude-login-url`,
+  `playwright-mcp-launch`); the Dockerfile copies them and sets the exec bit.
+  `rootfs/usr/share/claudecode-addon/CLAUDE.addon.md` is copied over the
+  persistent `CLAUDE.md` at every start and imports the user's `CLAUDE.user.md`.
+  Python unit tests run with
+  `cd claudecode && python3 -m unittest discover -s tests -p "test_*.py"`
+  (needs Linux, `jq` and `tmux`)
 - Both add-ons have `tests/startup_test.py`, which runs the real entrypoint with
   stubbed services. It needs Linux and `jq`
 - `codex/` - Codex add-on

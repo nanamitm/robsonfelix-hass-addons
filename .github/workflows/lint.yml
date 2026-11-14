@@ -14,7 +14,7 @@ jobs:
     name: Add-on config
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -33,7 +33,7 @@ jobs:
     # a release that fixes something.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: frenck/action-addon-linter@v2
         with:
           path: "./codex"
@@ -45,7 +45,7 @@ jobs:
     name: Usage bridge
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
@@ -63,10 +63,26 @@ jobs:
     name: Entrypoint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check syntax
         run: |
           bash -n codex/rootfs/usr/bin/codex-addon-start.sh
           bash -n claudecode/rootfs/usr/bin/claudecode-addon-start.sh
           python3 claudecode/tests/startup_test.py
           python3 codex/tests/startup_test.py
+
+  claudecode-tests:
+    name: Claude Code helpers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # test_login_url drives a real tmux on a private socket
+      - name: Install tmux
+        run: sudo apt-get update -q && sudo apt-get install -y -q tmux
+      # Runs from claudecode/ so testlib imports; startup_test.py runs above
+      - name: Run tests
+        working-directory: claudecode
+        run: python3 -m unittest discover -s tests -p "test_*.py" -v

@@ -1,0 +1,11 @@
+# Weekly pull requests for GitHub Actions version bumps (ported from upstream,
+# which also watches add-ons this fork does not ship).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels: [dependencies]

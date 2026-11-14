@@ -1,4 +1,18 @@
 configuration:
+  default_task_model:
+    name: Default task model
+    description: >-
+      Model used by headless automation-triggered runs when the task does
+      not specify one. Leave empty for the Claude Code default.
+  default_task_allowed_tools:
+    name: Default task allowed tools
+    description: >-
+      Tool permissions granted to headless runs when the task does not
+      specify its own list. Headless runs cannot answer permission
+      prompts, so anything not allowed here (or in the task) is denied.
+  task_max_runtime_minutes:
+    name: Task max runtime (minutes)
+    description: Headless runs are terminated after this many minutes.
   enable_mcp:
     name: Enable Home Assistant MCP
     description: >-
@@ -42,6 +56,13 @@ configuration:
     description: >-
       Automatically check for and install Claude Code updates on add-on startup.
       Keeps Claude Code current without requiring add-on version bumps.
+  auto_launch_claude:
+    name: Auto-launch Claude Code
+    description: >-
+      Start Claude Code automatically when the web terminal opens. "off" starts
+      a plain shell (default), "new" launches a fresh Claude Code session,
+      "continue" resumes the most recent session (claude --continue). When
+      Claude Code exits you land in a normal shell.
   enable_remote_control:
     name: Enable Remote Control
     description: >-
@@ -57,6 +78,31 @@ configuration:
       Prefix for auto-generated Remote Control session names visible in claude.ai/code
       and the Claude mobile app. Defaults to "HomeAssistant", producing names like
       "HomeAssistant-graceful-unicorn". Only applies when Enable Remote Control is on.
+  remote_control_server:
+    name: Remote Control Server
+    description: >-
+      Start a Claude Code Remote Control server in the background when the add-on
+      boots, without opening the web terminal. From claude.ai/code or the Claude
+      mobile app you can then start new sessions that run in /homeassistant, not just
+      steer an existing one. Restarts automatically if it exits; view it with
+      "tmux attach -t rc". Requires Enable Remote Control. Security note: anyone who
+      can sign in to the linked Claude account can start new root sessions on your
+      Home Assistant host.
+  remote_control_permission_mode:
+    name: Remote Control Permission Mode
+    description: >-
+      Permission mode for sessions started through the Remote Control server.
+      "default" asks you to approve actions from the app; "acceptEdits" approves file
+      edits; "auto" lets Claude decide which actions are safe to run; "plan" only
+      plans; "dontAsk" denies anything not pre-approved. Only applies when Remote
+      Control Server is on.
+  extra_npm_packages:
+    name: Extra npm Packages
+    description: >-
+      npm package specs (e.g. "@modelcontextprotocol/server-filesystem" or
+      "some-mcp@1.4.2") installed on every add-on start into a persistent
+      directory on the HA volume, so they survive add-on updates and rebuilds.
+      Use this to add custom MCP servers without forking the add-on.
   usage_sensors:
     name: Usage sensors
     description: >-

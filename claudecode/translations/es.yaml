@@ -1,4 +1,20 @@
 configuration:
+  default_task_model:
+    name: Modelo predeterminado de tarea
+    description: >-
+      Modelo usado por las ejecuciones headless lanzadas desde automatizaciones
+      cuando la tarea no especifica uno. Dejar vacio para usar el valor
+      predeterminado de Claude Code.
+  default_task_allowed_tools:
+    name: Herramientas permitidas por defecto en tareas
+    description: >-
+      Permisos de herramientas concedidos a las ejecuciones headless cuando la
+      tarea no trae su propia lista. Las ejecuciones headless no pueden
+      responder a solicitudes de permiso, asi que todo lo que no este permitido
+      aqui (o en la tarea) se deniega.
+  task_max_runtime_minutes:
+    name: Tiempo maximo de ejecucion (minutos)
+    description: Las ejecuciones headless se terminan despues de estos minutos.
   enable_mcp:
     name: Habilitar MCP de Home Assistant
     description: >-
@@ -44,6 +60,13 @@ configuration:
     description: >-
       Verifica e instala automáticamente actualizaciones de Claude Code al iniciar el add-on.
       Mantiene Claude Code actualizado sin necesidad de actualizar la versión del add-on.
+  auto_launch_claude:
+    name: Inicio Automático de Claude Code
+    description: >-
+      Inicia Claude Code automáticamente al abrir el terminal web. "off" abre un
+      shell normal (predeterminado), "new" inicia una sesión nueva de Claude Code,
+      "continue" reanuda la sesión más reciente (claude --continue). Al salir de
+      Claude Code quedas en un shell normal.
   enable_remote_control:
     name: Habilitar Control Remoto
     description: >-
@@ -60,6 +83,32 @@ configuration:
       Prefijo para los nombres de sesión de Control Remoto generados automáticamente,
       visible en claude.ai/code y la aplicación móvil de Claude. El valor predeterminado
       es "HomeAssistant", generando nombres como "HomeAssistant-graceful-unicorn". Solo aplica cuando el Control Remoto está habilitado.
+  remote_control_server:
+    name: Servidor de Control Remoto
+    description: >-
+      Inicia un servidor de Control Remoto de Claude Code en segundo plano al arrancar
+      el add-on, sin abrir la terminal web. Desde claude.ai/code o la aplicación móvil
+      de Claude puedes iniciar sesiones nuevas que se ejecutan en /homeassistant, no
+      solo controlar una existente. Se reinicia automáticamente si termina; míralo con
+      "tmux attach -t rc". Requiere Habilitar Control Remoto. Nota de seguridad:
+      cualquiera que pueda iniciar sesión en la cuenta de Claude vinculada podrá
+      iniciar sesiones nuevas como root en tu servidor de Home Assistant.
+  remote_control_permission_mode:
+    name: Modo de Permisos del Control Remoto
+    description: >-
+      Modo de permisos para las sesiones iniciadas desde el servidor de Control Remoto.
+      "default" pide aprobar las acciones desde la aplicación; "acceptEdits" aprueba
+      las ediciones de archivos; "auto" deja que Claude decida qué acciones son
+      seguras; "plan" solo planifica; "dontAsk" rechaza todo lo no preaprobado. Solo
+      aplica cuando el Servidor de Control Remoto está habilitado.
+  extra_npm_packages:
+    name: Paquetes npm Adicionales
+    description: >-
+      Especificaciones de paquetes npm (p. ej. "@modelcontextprotocol/server-filesystem"
+      o "some-mcp@1.4.2") que se instalan en cada inicio del add-on en un directorio
+      persistente del volumen de HA, por lo que sobreviven a actualizaciones y
+      reconstrucciones del add-on. Úsalo para añadir servidores MCP personalizados
+      sin bifurcar el add-on.
 
 network:
   7681/tcp: Terminal Web (ttyd)

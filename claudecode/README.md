@@ -91,10 +91,77 @@ claude --continue
 | `ha-config` | Navigate to config directory |
 | `ha-logs` | View Home Assistant logs |
 
+## Headless Runs from Automations
+
+Any Home Assistant automation can start a headless Claude Code session and
+pass the entire task as data, using the built-in `hassio.addon_stdin`
+service:
+
+```yaml
+- action: hassio.addon_stdin
+  data:
+    addon: XXXXXXXX_claudecode   # your installed slug
+    input:
+      run_id: morning-report
+      prompt: >-
+        Read the temperatures of all climate entities and send a summary
+        to notify.mobile_app_phone.
+      model: sonnet
+      allowed_tools:
+        - mcp__homeassistant__*
+        - Bash
+```
+
+- One of `prompt` (inline text) or `prompt_file` (a path visible inside the
+  add-on, e.g. `/share/task.md`) is required; everything else is optional.
+- `model` and `allowed_tools` fall back to the `default_task_model` /
+  `default_task_allowed_tools` add-on options. Headless runs cannot answer
+  permission prompts, so the allow-list defines what the agent may do.
+- Runs are serialized (one at a time) and killed after
+  `task_max_runtime_minutes`.
+- The add-on fires Home Assistant events your automations can react to:
+  `claudecode_run_started` (`run_id`, `log_path`) and
+  `claudecode_run_finished` (`run_id`, `success`, `exit_code`,
+  `duration_seconds`, `log_path`, `output_tail`).
+- Transcripts are written to the add-on config directory
+  (`task-logs/<run_id>-<timestamp>.log`).
+- Authentication reuses the login you completed in the web terminal.
+- Send `{"abort": true}` on the same channel to hard-kill the active
+  run (finish event carries `aborted: true`); a task sent while another
+  is running is rejected with a `claudecode_run_rejected` event.
+
+### Give it a friendlier name
+
+`hassio.addon_stdin` is generic plumbing. Wrap it once in a script with
+typed fields and every automation gets a readable, first-class action:
+
+```yaml
+script:
+  claude_agent:
+    alias: Claude agent
+    fields:
+      prompt: {selector: {text: {multiline: true}}}
+      run_id: {default: task, selector: {text: {}}}
+      model: {selector: {text: {}}}
+    sequence:
+      - action: hassio.addon_stdin
+        data:
+          addon: XXXXXXXX_claudecode
+          input:
+            run_id: "{{ run_id | default('task') }}"
+            prompt: "{{ prompt | default('') }}"
+            model: "{{ model | default('') }}"
+```
+
+Then: `action: script.claude_agent` with `prompt:` / `run_id:` data.
+
 ## Configuration Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
+| `default_task_model` | Model for headless runs that do not name one (empty = Claude Code default) | "" |
+| `default_task_allowed_tools` | Tools allowed in headless runs that do not pass their own list | `[]` |
+| `task_max_runtime_minutes` | Headless runs are killed after this many minutes (1-240) | 30 |
 | `enable_mcp` | Enable HA integration | true |
 | `enable_playwright_mcp` | Enable browser automation via the Playwright Browser add-on | false |
 | `playwright_cdp_host` | Override the Playwright Browser hostname (auto-detected when empty) | "" |
@@ -103,10 +170,21 @@ claude --continue
 | `working_directory` | Start directory | /homeassistant |
 | `session_persistence` | Use tmux for persistent sessions | true |
 | `auto_update_claude` | Auto-update Claude Code on startup (rolls back automatically if the new release cannot run) | true |
+| `auto_launch_claude` | Start Claude Code automatically when the terminal opens: `off` (plain shell), `new` (fresh session), or `continue` (resume the last session). Exiting Claude drops you into a shell | off |
 | `enable_remote_control` | View and steer the session from claude.ai/code or the Claude mobile app. See the security note below | false |
 | `remote_control_session_prefix` | Prefix for auto-generated Remote Control session names | HomeAssistant |
+| `remote_control_server` | Run a Remote Control server at boot so you can start new sessions from claude.ai/code or the Claude mobile app. Requires `enable_remote_control` | false |
+| `remote_control_permission_mode` | Permission mode for sessions started through the server: `default`, `acceptEdits`, `auto`, `plan` or `dontAsk` | default |
+| `extra_npm_packages` | npm package specs installed at every start under `/homeassistant/.claudecode/npm-global` (persistent across rebuilds; its bin dir is on `PATH`). Use it to add custom MCP servers | `[]` |
 | `usage_sensors` | Publish Claude subscription usage as MQTT sensors | true |
 | `usage_poll_seconds` | Usage polling interval in seconds | 300 |
+
+> **Playwright version coupling.** `@playwright/mcp` is installed unpinned, so
+> every rebuild of this add-on picks up the newest client, while the browser it
+> drives comes from the Playwright Browser add-on and only moves when that
+> add-on's base image is bumped. The two drift apart on their own. CDP tolerates
+> a modest gap, but if browser automation starts failing with protocol errors,
+> compare the two versions before looking anywhere else.
 
 ### Usage Sensors
 
@@ -123,7 +201,37 @@ The usage API adapter is based on the MIT-licensed
 
 With `enable_remote_control`, sessions can be driven from `claude.ai/code` or the Claude mobile app (requires a Pro, Max, Team, or Enterprise subscription; API keys are not supported).
 
-**Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it. Leave this off unless you need it.
+`enable_remote_control` on its own applies to sessions you start in the web terminal, so nothing is reachable until you open it and run `claude`. Turn on `remote_control_server` as well to run `claude remote-control` in the background as soon as the add-on boots. It shows up in claude.ai/code and the mobile app, where you can start new sessions that run in `/homeassistant`. It runs in its own tmux session (`tmux attach -t rc` to view it) and restarts automatically if it exits. `remote_control_permission_mode` sets the permission mode for those sessions.
+
+**Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it, and with `remote_control_server` on they can start new sessions on it at any time. Leave this off unless you need it.
+
+
+### Custom MCP servers (`extra_npm_packages`)
+
+Add-on updates rebuild the container and wipe anything you `npm install -g` manually. `extra_npm_packages` re-installs a list of packages on every container start, to a persistent path on the HA volume.
+
+**Install:**
+
+1. Add packages to the option in the add-on Configuration tab:
+   ```yaml
+   extra_npm_packages:
+     - "@modelcontextprotocol/server-filesystem"
+     - "some-other-mcp@1.4.2"
+     - "@vendor/mcp"
+   ```
+2. Restart the add-on. Watch the log for `[INFO] Installing extra_npm_packages: ...`.
+3. Open a terminal in Claude Code and register the MCP server:
+   ```bash
+   claude mcp add-json filesystem '{"command":"mcp-server-filesystem","args":["/homeassistant"]}' -s user
+   ```
+   The binary lives at `/homeassistant/.claudecode/npm-global/bin/<bin-name>` and that directory is on `PATH`, so referencing it by name works.
+
+The MCP registration itself is persistent (stored in `~/.claude/settings.json`, which is symlinked to the HA volume), so step 3 is one-time.
+
+**Caveats:**
+- Re-installs on every container start; unpinned packages get the latest each time.
+- A bad package name logs `[WARN]` but doesn't stop the add-on.
+- Don't know the binary name? Run `ls /homeassistant/.claudecode/npm-global/bin/` after install.
 
 ## File Locations
 
@@ -134,6 +242,10 @@ With `enable_remote_control`, sessions can be driven from `claude.ai/code` or th
 | `/media` | Media folder | read-write |
 | `/ssl` | SSL certificates | read-only |
 | `/backup` | Backups | read-only |
+
+## Customizing Claude's Instructions
+
+The add-on regenerates `~/.claude/CLAUDE.md` (Claude Code's persistent instructions file) on every start, so don't edit it directly. Put your own instructions in `/homeassistant/.claudecode/CLAUDE.user.md` instead: the add-on creates it empty, never modifies it, and `CLAUDE.md` imports it — so anything you write there loads into every Claude Code session and survives restarts and add-on updates.
 
 ## Session Persistence
 
@@ -188,6 +300,8 @@ The authentication URL can be long and may wrap across multiple lines. To handle
 3. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
 
 Over **HTTPS** (or localhost), the CLI's **press `c` to copy** hint also works. Don't drag-select the URL: its rows are separate lines and copy with line breaks. If you need it as text, **zoom out** (`Ctrl + -` or `Cmd + -`) until it fits on one line.
+
+If you would rather have the URL as plain text — to open it on another machine, or if your browser blocks the click — run `claude-login-url` in a second tmux window (`Ctrl+b c`). It reassembles the full URL from the scrollback even when wrapped and writes it to `/homeassistant/claude-login-url.txt` (mode 600). Delete that file when you are done: it lives in your config directory, which is included in HA backups. The helper needs `session_persistence: true`; without tmux, native browser copy works directly.
 
 ### Scrolling and Session Persistence Trade-offs
 
@@ -259,6 +373,25 @@ Fix it at the hypervisor, not in the add-on:
 Then fully **stop and start** the VM — a reboot alone doesn't re-negotiate the CPU model.
 
 Until you do, the add-on still works: the build automatically falls back to Claude Code 2.1.112, the last release that runs without AVX, and startup prints a warning explaining this.
+
+### A simple question burned a whole usage block
+
+The add-on does not change how Claude Code consumes tokens — it ships the stock
+CLI. But it pre-authorizes `Read`, `Glob` and `Grep` over `/homeassistant/**`,
+and Home Assistant's own log is frequently tens of thousands of lines. A single
+`Read` of `home-assistant.log` can consume an enormous amount of context, which
+is usually what is behind "I asked something trivial and ran out of credits".
+
+What helps:
+
+- Ask for targeted reads. `grep` for a pattern with a line limit beats reading a
+  log whole: *"grep the last 50 lines mentioning zwave in home-assistant.log"*.
+- Keep the log out of the question when it is not relevant. Claude reaches for
+  it readily because it is pre-authorized.
+- Watch the model. The CLI's default changed to Opus in late 2026, which costs
+  noticeably more on equivalent work; `/model` switches it per session.
+- For recurring tasks, consider the headless runs described above with a narrow
+  `allowed_tools` list, rather than an interactive session with full file access.
 
 ### Terminal not loading
 

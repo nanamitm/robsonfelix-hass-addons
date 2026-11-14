@@ -40,7 +40,7 @@ jobs:
     env:
       DOCKER_BUILDKIT: "0"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Build
         run: |
           base=$(sed -n "s/^  ${{ matrix.arch }}: //p" ${{ matrix.addon }}/build.yaml)
@@ -52,3 +52,9 @@ jobs:
         run: |
           docker run --rm --entrypoint /bin/bash addon-test -c \
             'ttyd --version && test -s /usr/share/ttyd/index.html && tmux -f /root/.tmux.conf start-server'
+      - name: Check the Claude Code helpers
+        if: matrix.addon == 'claudecode'
+        run: |
+          docker run --rm --entrypoint /bin/bash addon-test -c \
+            'for f in claude-auto-launch claude-login-url playwright-mcp-launch stdin-runner.sh; do test -x /usr/local/bin/$f || exit 1; done &&
+             test -s /usr/share/claudecode-addon/CLAUDE.addon.md && playwright-mcp --version'
