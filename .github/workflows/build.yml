@@ -44,9 +44,11 @@ jobs:
       - name: Build
         run: |
           base=$(sed -n "s/^  ${{ matrix.arch }}: //p" ${{ matrix.addon }}/build.yaml)
+          version=$(sed -n 's/^version: "\(.*\)"/\1/p' ${{ matrix.addon }}/config.yaml)
           docker build \
             --build-arg BUILD_FROM="$base" \
             --build-arg BUILD_ARCH=${{ matrix.arch }} \
+            --build-arg BUILD_VERSION="$version" \
             -t addon-test ${{ matrix.addon }}
       - name: Check the image
         run: |
@@ -56,5 +58,8 @@ jobs:
         if: matrix.addon == 'claudecode'
         run: |
           docker run --rm --entrypoint /bin/bash addon-test -c \
-            'for f in claude-auto-launch claude-login-url playwright-mcp-launch stdin-runner.sh; do test -x /usr/local/bin/$f || exit 1; done &&
+            'for f in claude-auto-launch claude-login-url playwright-mcp-launch stdin-runner.sh ha-ws; do test -x /usr/local/bin/$f || exit 1; done &&
+             python3 -m py_compile /usr/local/bin/ha-ws &&
              test -s /usr/share/claudecode-addon/CLAUDE.addon.md && playwright-mcp --version'
+          version=$(sed -n 's/^version: "\(.*\)"/\1/p' claudecode/config.yaml)
+          test "$(docker run --rm --entrypoint cat addon-test /etc/claude-code-built-for)" = "addon $version"

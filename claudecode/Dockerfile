@@ -94,7 +94,14 @@ COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 # the npm cache and temp dirs in the SAME layer - otherwise ~100MB+ of cache
 # gets baked into the image.
 COPY install-claude.sh /usr/local/bin/install-claude.sh
-RUN chmod +x /usr/local/bin/install-claude.sh     && /usr/local/bin/install-claude.sh     && npm cache clean --force     && rm -rf /root/.npm /tmp/*
+# Include the add-on version in the cache key so a version-only update
+# installs the current CLI instead of reusing the previous release's layer.
+ARG BUILD_VERSION
+RUN chmod +x /usr/local/bin/install-claude.sh \
+    && echo "addon $BUILD_VERSION" > /etc/claude-code-built-for \
+    && /usr/local/bin/install-claude.sh \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
 
 # Install hass-mcp for Home Assistant integration and pymodbus for Modbus operations
 RUN pip3 install --no-cache-dir --break-system-packages hass-mcp pymodbus pyserial
@@ -165,6 +172,10 @@ RUN for f in /usr/share/claudecode-addon/usage-bridge/*.js; do node --check "$f"
 COPY rootfs/usr/local/bin/claude-auto-launch rootfs/usr/local/bin/claude-login-url      rootfs/usr/local/bin/playwright-mcp-launch rootfs/usr/local/bin/stdin-runner.sh      /usr/local/bin/
 RUN chmod +x /usr/local/bin/claude-auto-launch /usr/local/bin/claude-login-url         /usr/local/bin/playwright-mcp-launch /usr/local/bin/stdin-runner.sh &&     for f in claude-auto-launch claude-login-url playwright-mcp-launch stdin-runner.sh; do         bash -n "/usr/local/bin/$f" || exit 1;     done
 
+# Home Assistant WebSocket API client (Python standard library only).
+COPY rootfs/usr/local/bin/ha-ws /usr/local/bin/ha-ws
+RUN chmod +x /usr/local/bin/ha-ws
+
 # Ensure .bashrc is sourced for login shells too
 RUN echo 'source ~/.bashrc' > /root/.profile
 
@@ -175,8 +186,8 @@ ENV PATH="/root/.local/bin:/homeassistant/.claudecode/npm-global/bin:${PATH}"
 # Set working directory
 WORKDIR /homeassistant
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+# Allow the startup CLI update to finish before declaring the add-on unhealthy.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
     CMD curl -sf http://localhost:7681/ || exit 1
 
 # Keep shell quoting out of Dockerfile JSON parsing.

@@ -411,6 +411,25 @@ After changing configuration:
 1. Save the configuration
 2. Restart the add-on completely
 
+### Home Assistant WebSocket API
+
+Use `ha-ws` for API operations that are unavailable through REST, such as entity
+registry changes. It uses the add-on's Supervisor token automatically:
+
+```sh
+ha-ws '{"type":"config/entity_registry/list"}'
+ha-ws commands.json
+cat commands.json | ha-ws -
+```
+
+A file or standard input can contain a list of command objects. The command
+prints one JSON reply per operation and stops at the first failure;
+`--keep-going` continues with the remaining operations. `--timeout SECS` sets
+the deadline for each reply (default: 300 seconds).
+
+The add-on shares the Home Assistant host's hostname, so Remote Control reports
+that name instead of the add-on slug.
+
 ## Support
 
 - [GitHub Issues](https://github.com/robsonfelix/robsonfelix-hass-addons/issues)

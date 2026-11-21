@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1] - 2026-11-21
+
+### Added
+- Port upstream's `ha-ws` command and fake-server tests for Home Assistant WebSocket API calls, including the Python extension permission required by AppArmor.
+
+### Changed
+- Share the Home Assistant host's hostname with `host_uts`, so Remote Control reports the host name instead of the add-on slug.
+
+### Fixed
+- Include the add-on version in the Claude Code installation layer's cache key, and pass it during CI builds, so version-only updates do not reuse a stale CLI.
+- Extend the startup health-check grace period from 10 to 300 seconds to allow automatic CLI updates to finish without a restart loop.
+
 ## [1.4.0] - 2026-11-14
 
 Ported from upstream (robsonfelix/robsonfelix-hass-addons 1.2.66-1.2.76).
