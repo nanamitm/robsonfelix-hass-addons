@@ -110,5 +110,16 @@ configuration:
       jour et reconstructions du module complémentaire. Utilisez cette option pour
       ajouter des serveurs MCP personnalisés sans forker le module complémentaire.
 
+  usage_sensors:
+    name: Capteurs d'utilisation
+    description: >-
+      Publie l'utilisation de l'abonnement Claude et les heures de réinitialisation
+      dans Home Assistant via MQTT Discovery et la connexion OAuth de Claude Code.
+  usage_poll_seconds:
+    name: Intervalle de consultation de l'utilisation
+    description: >-
+      Intervalle en secondes entre les actualisations de l'utilisation (60-3600).
+      La valeur recommandée est de 300 secondes pour éviter des requêtes trop fréquentes.
+
 network:
   7681/tcp: Terminal Web (ttyd)

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.2] - 2026-11-23
+
+### Changed
+- Synchronize upstream history while retaining this fork's Codex add-on, MQTT usage sensors, verified downloads, and native multi-architecture builds. Upstream's startup fixes and helper features were already ported in 1.4.0 and 1.4.1.
+- Include upstream's guidance to use `ha-ws` instead of editing Home Assistant's `.storage` files while Core is running.
+
+### Added
+- Upstream checks for option/schema/translation consistency and Dockerfile startup-command syntax, adapted to this fork's separate entrypoint script.
+- A `make test` entry point for the Claude Code helper test suite.
+
+### Fixed
+- Add missing Spanish, French, and Brazilian Portuguese labels for the MQTT usage-sensor options.
+
 ## [1.4.1] - 2026-11-21
 
 ### Added

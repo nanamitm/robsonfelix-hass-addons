@@ -109,5 +109,16 @@ configuration:
       add-on. Use para adicionar servidores MCP personalizados sem fazer fork do
       add-on.
 
+  usage_sensors:
+    name: Sensores de uso
+    description: >-
+      Publica o uso da assinatura Claude e os horários de reinício no Home Assistant
+      usando MQTT Discovery e a sessão OAuth já gerenciada pelo Claude Code.
+  usage_poll_seconds:
+    name: Intervalo de consulta de uso
+    description: >-
+      Intervalo em segundos para atualizar o uso do Claude (60-3600).
+      Recomenda-se 300 segundos para evitar consultas frequentes demais.
+
 network:
   7681/tcp: Terminal Web (ttyd)

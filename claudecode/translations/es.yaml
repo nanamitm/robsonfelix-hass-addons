@@ -110,5 +110,16 @@ configuration:
       reconstrucciones del add-on. Úsalo para añadir servidores MCP personalizados
       sin bifurcar el add-on.
 
+  usage_sensors:
+    name: Sensores de uso
+    description: >-
+      Publica el uso de la suscripción de Claude y las horas de reinicio en
+      Home Assistant mediante MQTT Discovery y la sesión OAuth de Claude Code.
+  usage_poll_seconds:
+    name: Intervalo de consulta del uso
+    description: >-
+      Intervalo en segundos para actualizar el uso de Claude (60-3600).
+      Se recomienda 300 segundos para evitar consultas demasiado frecuentes.
+
 network:
   7681/tcp: Terminal Web (ttyd)
