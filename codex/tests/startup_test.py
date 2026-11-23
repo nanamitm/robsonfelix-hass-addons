@@ -28,7 +28,7 @@ def boot(options=None, setup=None):
     (base / 'data/options.json').write_text(json.dumps({**defaults, **(options or {})}))
     for name, body in {
         'codex': '#!/bin/bash\n[ "$1" = mcp ] && { echo "homeassistant  hass-mcp"; exit 0; }\necho "codex-cli 1.2.3"\n',
-        'ttyd': '#!/bin/bash\nprintf "%s\\n" "$@" > "$TEST_ARGS"\npwd > "$TEST_CWD"\n',
+        'ttyd': '#!/bin/bash\nprintf "%s\\n" "$@" > "$TEST_ARGS"\npwd > "$TEST_CWD"\necho "$SQLITE_TMPDIR" > "$TEST_CWD.sqlite"\n',
     }.items():
         file = base / 'bin' / name
         file.write_text(body)
@@ -45,6 +45,13 @@ def boot(options=None, setup=None):
     assert (base / 'args').exists(), result.stdout
     return tmp, base, result.stdout
 
+
+# SQLite temp files go under $CODEX_HOME/tmp, the only temp dir AppArmor allows besides /tmp.
+tmp, base, _ = boot()
+sqlite_tmp = Path((base / 'cwd.sqlite').read_text().strip())
+assert sqlite_tmp == base / 'homeassistant/.codex/tmp' and sqlite_tmp.is_dir(), sqlite_tmp
+tmp.cleanup()
+print('PASS: SQLITE_TMPDIR')
 
 # Defaults: reaches ttyd, with the generated config and terminal arguments.
 tmp, base, out = boot()

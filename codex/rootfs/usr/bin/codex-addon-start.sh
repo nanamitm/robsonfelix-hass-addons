@@ -51,6 +51,14 @@ fi
 
 mkdir -p "$CODEX_HOME" "$SYSTEM_CONFIG_DIR"
 
+# Give SQLite a temp dir the AppArmor profile lets it write. Without this,
+# Codex 0.171 failed to migrate its state DB with "(code: 14) unable to open
+# database file" and the app-server never started; SQLITE_TMPDIR fixed it.
+# Likely cause: SQLite tries /var/tmp before /tmp, and the profile denies
+# /var/tmp. $CODEX_HOME/tmp is already granted.
+export SQLITE_TMPDIR="${SQLITE_TMPDIR:-$CODEX_HOME/tmp}"
+mkdir -p "$SQLITE_TMPDIR"
+
 # Codex copies its whole release package (~450 MB per version) into
 # $CODEX_HOME/packages to run its background app-server daemon from. Keep that
 # out of the HA config directory, which is part of every backup: point it at

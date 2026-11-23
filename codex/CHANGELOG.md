@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.15] - 2026-11-23
+
+### Fixed
+- Codex failed to start after updating to 0.171 with `(code: 14) unable to open
+  database file` while migrating its state DB, because SQLite could not create
+  temp files under the AppArmor profile. The add-on now sets `SQLITE_TMPDIR`
+  to `$CODEX_HOME/tmp`
+
 ## [0.2.14] - 2026-11-02
 
 ### Changed
